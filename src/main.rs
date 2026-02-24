@@ -1,39 +1,57 @@
-use core::panic;
-use std::collections::HashMap;
-use std::fs::{self, ReadDir, read_dir};
 #[warn(unused)]
-use std::path::Path;
-use std::{fs::File, io};
+use std::collections::HashMap;
+use std::fs::File;
 use xml::reader::{EventReader, XmlEvent};
 
 #[derive(Debug)]
 struct Lexer<'a> {
     content: &'a [char],
-    cursor: usize,
 }
 
 impl<'a> Lexer<'a> {
     fn new(content: &'a [char]) -> Self {
-        Self { content, cursor: 0 }
+        Self { content }
+    }
+
+    fn chop(&mut self, n: usize) -> &'a [char] {
+        let token = &self.content[..n];
+        self.content = &self.content[n..];
+        token
+    }
+
+    fn take_while<F>(&mut self, mut predicate: F) -> &'a [char]
+    where
+        F: FnMut(char) -> bool,
+    {
+        let mut n = 0;
+        while n < self.content.len() && predicate(self.content[n]) {
+            n += 1;
+        }
+        self.chop(n)
     }
 
     fn next_token(&mut self) -> Option<&'a [char]> {
         self.trim_left();
-        if self.content.len() == 0 {
+
+        if self.content.is_empty() {
             return None;
         }
-        todo!("not implemented");
+
+        let first = self.content[0];
+        if first.is_alphabetic() {
+            Some(self.take_while(|c| c.is_alphanumeric()))
+        } else if first.is_numeric() {
+            Some(self.take_while(|c| c.is_numeric()))
+        } else {
+            Some(self.chop(1))
+        }
     }
 
     fn trim_left(&mut self) {
-        while self.content.len() > 0 && self.content[0].is_whitespace() {
+        while !self.content.is_empty() && self.content[0].is_whitespace() {
             self.content = &self.content[1..];
         }
     }
-}
-
-fn index(content: &str) -> HashMap<String, usize> {
-    todo!("Hashmap to make ");
 }
 
 fn read_entire_xml_file(file_path: &str) -> Result<String, Box<dyn std::error::Error>> {
@@ -41,9 +59,10 @@ fn read_entire_xml_file(file_path: &str) -> Result<String, Box<dyn std::error::E
     let er = EventReader::new(file);
     let mut content = String::new();
 
-    for event in er.into_iter() {
-        if let XmlEvent::Characters(text) = event? {
-            content.push_str(&text);
+    for event in er {
+        match event? {
+            XmlEvent::Characters(text) => content.push_str(&text),
+            _ => {}
         }
     }
 
@@ -51,31 +70,34 @@ fn read_entire_xml_file(file_path: &str) -> Result<String, Box<dyn std::error::E
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    //let all_docs=HashMap::<Path,HashMap<String,usize>>>::new();
+    let file_path = "docs.gl/gl4/glVertexAttribDivisor.xhtml";
+    let content_str = read_entire_xml_file(file_path)?;
+    let content = content_str.chars().collect::<Vec<_>>();
 
-    let content = read_entire_xml_file("docs.gl/gl4/glVertexAttribDivisor.xhtml")?
-        .chars()
-        .collect::<Vec<_>>();
+    let mut lexer = Lexer::new(&content);
 
-    let lexer = Lexer::new(&content);
-    println!("{:?}", lexer);
-    /*
-        let dir_path = "docs.gl/gl4";
+    while let Some(token_chars) = lexer.next_token() {
+        let token: String = token_chars.iter().collect();
+        println!("{}", token);
+    }
 
-        let dir = fs::read_dir(dir_path).unwrap_or_else(|err| {
-            panic!("Error reading directory {}: {}", dir_path, err);
-        });
-
-        for entry in dir {
-            let entry = entry?;
-            let path_buff = entry.path();
-            let file_path = path_buff.to_str().unwrap();
-            let content = read_entire_xml_file(&file_path).unwrap_or_else(|err| {
-                panic!("Failed to read XML file {}: {}", file_path, err);
-            });
-
-            println!("{file_path:?} => size: {}", content.len());
-        }
-    */
     Ok(())
 }
+/*
+    let dir_path = "docs.gl/gl4";
+
+    let dir = fs::read_dir(dir_path).unwrap_or_else(|err| {
+        panic!("Error reading directory {}: {}", dir_path, err);
+    });
+
+    for entry in dir {
+        let entry = entry?;
+        let path_buff = entry.path();
+        let file_path = path_buff.to_str().unwrap();
+        let content = read_entire_xml_file(&file_path).unwrap_or_else(|err| {
+            panic!("Failed to read XML file {}: {}", file_path, err);
+        });
+
+        println!("{file_path:?} => size: {}", content.len());
+    }
+*/
