@@ -1,12 +1,19 @@
+use serde_json;
 #[warn(unused)]
 use std::collections::HashMap;
-use std::fs::File;
+use std::{
+    fs::{self, File},
+    path::PathBuf,
+};
 use xml::reader::{EventReader, XmlEvent};
+type TF = HashMap<String, usize>;
+type Index = HashMap<PathBuf, TF>;
 
 #[derive(Debug)]
 struct Lexer<'a> {
     content: &'a [char],
 }
+const PATH_LEN: usize = 10;
 
 impl<'a> Lexer<'a> {
     fn new(content: &'a [char]) -> Self {
@@ -70,45 +77,54 @@ fn read_entire_xml_file(file_path: &str) -> Result<String, Box<dyn std::error::E
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let file_path = "docs.gl/gl4/glVertexAttribDivisor.xhtml";
-    let content_str = read_entire_xml_file(file_path)?;
-    let content = content_str.chars().collect::<Vec<_>>();
+    let dir_path = "docs.gl/gl4";
+    let dir = fs::read_dir(dir_path)?;
+    let mut tf_index = Index::new();
 
-    let mut tf = HashMap::<String, usize>::new();
-    let mut lexer = Lexer::new(&content);
+    for file in dir {
+        let file_path_buff = file?.path();
+        let &file_path = &file_path_buff.to_str().unwrap();
+        let content_str = read_entire_xml_file(file_path)?;
+        let content = content_str.chars().collect::<Vec<_>>();
 
-    while let Some(token_chars) = lexer.next_token() {
-        let token: String = token_chars.iter().collect();
-        if let Some(count) = tf.get_mut(&token) {
-            *count += 1;
-        } else {
-            tf.insert(token, 1);
+        let mut tf = TF::new();
+        let mut lexer = Lexer::new(&content);
+
+        while let Some(token_chars) = lexer.next_token() {
+            let token: String = token_chars.iter().collect();
+            if let Some(count) = tf.get_mut(&token) {
+                *count += 1;
+            } else {
+                tf.insert(token, 1);
+            }
+        }
+
+        let mut stats: Vec<_> = tf.into_iter().collect();
+        stats.sort_by_key(|(_, v)| std::cmp::Reverse(*v));
+
+        tf = stats.into_iter().collect();
+
+        tf_index.insert(file_path_buff, tf);
+    }
+
+    let index_path = "index.json";
+    let index_file = File::create(index_path)?;
+    println!("Writing in the file path {index_path}");
+    serde_json::to_writer(index_file, &tf_index).expect("Serde works fine");
+    /*
+
+    for (p, tf) in tf_index {
+        println!("{:?} file has", p);
+
+        let mut n = 0;
+        for (t, f) in tf {
+            println!("{t} => {f}");
+            n += 1;
+            if n == PATH_LEN {
+                break;
+            }
         }
     }
-
-    let mut stats = tf.iter().collect::<Vec<_>>();
-    stats.sort_by_key(|&(_, v)| std::cmp::Reverse(v));
-
-    for (term, freq) in stats {
-        println!("{} of the word is  {} ", freq, term);
-    }
+    */
     Ok(())
 }
-/*
-    let dir_path = "docs.gl/gl4";
-
-    let dir = fs::read_dir(dir_path).unwrap_or_else(|err| {
-        panic!("Error reading directory {}: {}", dir_path, err);
-    });
-
-    for entry in dir {
-        let entry = entry?;
-        let path_buff = entry.path();
-        let file_path = path_buff.to_str().unwrap();
-        let content = read_entire_xml_file(&file_path).unwrap_or_else(|err| {
-            panic!("Failed to read XML file {}: {}", file_path, err);
-        });
-
-        println!("{file_path:?} => size: {}", content.len());
-    }
-*/
