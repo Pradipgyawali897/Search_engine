@@ -74,13 +74,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let content_str = read_entire_xml_file(file_path)?;
     let content = content_str.chars().collect::<Vec<_>>();
 
+    let mut tf = HashMap::<String, usize>::new();
     let mut lexer = Lexer::new(&content);
 
     while let Some(token_chars) = lexer.next_token() {
         let token: String = token_chars.iter().collect();
-        println!("{}", token);
+        if let Some(count) = tf.get_mut(&token) {
+            *count += 1;
+        } else {
+            tf.insert(token, 1);
+        }
     }
 
+    let mut stats = tf.iter().collect::<Vec<_>>();
+    stats.sort_by_key(|&(_, v)| std::cmp::Reverse(v));
+
+    for (term, freq) in stats {
+        println!("{} of the word is  {} ", freq, term);
+    }
     Ok(())
 }
 /*
