@@ -3,6 +3,7 @@ use serde_json;
 use std::collections::HashMap;
 use std::{
     fs::{self, File},
+    io,
     path::PathBuf,
 };
 use xml::reader::{EventReader, XmlEvent};
@@ -77,6 +78,21 @@ fn read_entire_xml_file(file_path: &str) -> Result<String, Box<dyn std::error::E
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let index_path = "index.json";
+    let index_file = File::open(index_path)?;
+
+    println!("{index_path:?} file {index_file:?} is being read");
+
+    let tf_index: Index = serde_json::from_reader(index_file)?;
+
+    println!(
+        "{index_path} contains {count} files",
+        count = tf_index.len()
+    );
+
+    Ok(())
+}
+fn main2() -> Result<(), Box<dyn std::error::Error>> {
     let dir_path = "docs.gl/gl4";
     let dir = fs::read_dir(dir_path)?;
     let mut tf_index = Index::new();
