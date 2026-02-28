@@ -1,6 +1,6 @@
+mod server;
+use search_engine::{Index, engine};
 use std::io::{self, Write};
-use search_engine::{engine, Index};
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let index_path = "index.json";
     let mut tf_index: Index = engine::load_index(index_path)?;
@@ -54,6 +54,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 );
             }
             "quit" | "exit" => break,
+
+            "serve" | "start" => {
+                println!("Serving the server ");
+                let port = Option::None;
+                server::tiny_http::start_server(port);
+            }
             _ => {
                 println!(
                     "Unknown command: {}. Available: add, search, quit",
