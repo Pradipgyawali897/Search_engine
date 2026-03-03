@@ -40,3 +40,55 @@ impl SeedManager {
         self.frontier.iter()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_parses_valid_seeds() {
+        let manager = SeedManager::new(vec!["http://google.com", "http://example.com"]);
+        let urls: Vec<&Url> = manager.iter().collect();
+        assert_eq!(urls.len(), 2);
+    }
+
+    #[test]
+    fn new_skips_invalid_seeds() {
+        let manager = SeedManager::new(vec!["http://google.com", "not a url"]);
+        let urls: Vec<&Url> = manager.iter().collect();
+        assert_eq!(urls.len(), 1);
+    }
+
+    #[test]
+    fn new_deduplicates_seeds() {
+        let manager = SeedManager::new(vec!["http://google.com", "http://google.com"]);
+        let urls: Vec<&Url> = manager.iter().collect();
+        assert_eq!(urls.len(), 1);
+    }
+
+    #[test]
+    fn next_url_returns_in_order() {
+        let mut manager = SeedManager::new(vec!["http://first.com", "http://second.com"]);
+        let first = manager.next_url().unwrap();
+        assert_eq!(first.host_str(), Some("first.com"));
+        let second = manager.next_url().unwrap();
+        assert_eq!(second.host_str(), Some("second.com"));
+        assert!(manager.next_url().is_none());
+    }
+
+    #[test]
+    fn add_url_skips_duplicates() {
+        let mut manager = SeedManager::new(vec!["http://google.com"]);
+        manager.add_url("http://google.com");
+        let urls: Vec<&Url> = manager.iter().collect();
+        assert_eq!(urls.len(), 1);
+    }
+
+    #[test]
+    fn add_url_adds_new() {
+        let mut manager = SeedManager::new(vec!["http://google.com"]);
+        manager.add_url("http://example.com");
+        let urls: Vec<&Url> = manager.iter().collect();
+        assert_eq!(urls.len(), 2);
+    }
+}

@@ -1,10 +1,12 @@
-use search_engine::crawler::{dns, seed::loader};
-use search_engine::{Index, engine};
+use search_engine::indexer::{self, storage};
+use search_engine::parser::xml::XmlParser;
+use search_engine::Index;
 use std::io::{self, Write};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let index_path = "index.json";
-    let mut tf_index: Index = engine::load_index(index_path)?;
+    let mut tf_index: Index = storage::load_index(index_path)?;
+    let parser = XmlParser;
 
     loop {
         print!("Search Engine > ");
@@ -26,10 +28,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     continue;
                 }
                 let folder = parts[1];
-                if let Err(e) = engine::index_directory(folder, &mut tf_index) {
+                if let Err(e) = indexer::index_directory(folder, &mut tf_index, &parser) {
                     eprintln!("Error indexing: {}", e);
                 } else {
-                    engine::save_index(index_path, &tf_index)?;
+                    storage::save_index(index_path, &tf_index)?;
                     println!("Indexed {} files.", tf_index.len());
                 }
             }
@@ -50,31 +52,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
 
                 println!(
-                    "Found '{}' in {} files, total occurrences (content length): {}",
+                    "Found '{}' in {} files, total occurrences: {}",
                     keyword, file_count, total_count
                 );
             }
-            "quit" | "exit" => break,
-
             "serve" | "start" => {
-                println!("Serving the server ");
+                println!("Starting the server...");
                 let port = Option::None;
                 search_engine::server::http::start_server(port);
             }
-            "seeds" => {
-                let seed = loader::consume_seeds_from_file();
-                println!("{:?}", seed);
-                let seed_manager = loader::create_seed();
-                println!("{:?}", seed_manager);
-                for ip in seed_manager.iter() {
-                    let address = ip.host().unwrap().to_string();
-                    let dns_record = dns::resolve_ip_to_dns(&address);
-                    println!("{:?}", dns_record);
-                }
-            }
+            "quit" | "exit" => break,
             _ => {
                 println!(
-                    "Unknown command: {}. Available: add, search, seeds, serve, quit",
+                    "Unknown command: {}. Available: add, search, serve, quit",
                     parts[0]
                 );
             }
