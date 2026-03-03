@@ -1,6 +1,7 @@
-use std::collections::{VecDeque, HashSet};
+use std::collections::{HashSet, VecDeque};
 use url::Url;
 
+#[derive(Debug)]
 pub struct SeedManager {
     frontier: VecDeque<Url>,
     visited: HashSet<String>,
@@ -26,15 +27,16 @@ impl SeedManager {
         self.frontier.pop_front()
     }
 
-     pub fn add_url(&mut self, link: &str) {
+    pub fn add_url(&mut self, link: &str) {
         if let Ok(parsed) = Url::parse(link) {
             let normalized = parsed.to_string();
 
             if self.visited.insert(normalized.clone()) {
-                self.frontier.push_back(
-                    Url::parse(&normalized).unwrap()
-                );
+                self.frontier.push_back(Url::parse(&normalized).unwrap());
             }
         }
+    }
+    pub fn iter(&self) -> impl Iterator<Item = &Url> {
+        self.frontier.iter()
     }
 }
