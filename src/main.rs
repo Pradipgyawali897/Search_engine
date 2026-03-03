@@ -1,4 +1,5 @@
 mod server;
+
 use search_engine::{Index, engine};
 use std::io::{self, Write};
 fn main() -> Result<(), Box<dyn std::error::Error>> {

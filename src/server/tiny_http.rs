@@ -13,8 +13,10 @@ pub fn start_server(port: Option<&str>) {
             request.method(),
             request.url()
         );
-        let response = Response::from_string("Not Found").with_status_code((404));
-        request.respond(response).unwrap();
+        let response = Response::from_string("Not Found").with_status_code(404);
+        request.respond(response).unwrap_or_else(|err| {
+            eprintln!("error encountered sending the response {err}");
+        });
     }
 
     println!("Starting the server at the address {port}");
