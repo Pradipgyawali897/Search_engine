@@ -7,5 +7,5 @@ pub type Index = HashMap<PathBuf, TF>;
 
 pub mod engine;
 pub mod lexer;
-pub mod server;
 pub mod crawler;
+pub mod server;

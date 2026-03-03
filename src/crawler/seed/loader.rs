@@ -1,6 +1,6 @@
 use std::fs;
 
-use crate::crawler::seed_manager::manager::SeedManager;
+use crate::crawler::seed::manager::SeedManager;
 
 pub fn consume_seeds_from_file() -> Vec<String> {
     let content = fs::read_to_string("seed.txt").unwrap_or_else(|err| {
