@@ -3,5 +3,6 @@ members = [
     "crates/crawler",
     "crates/indexer",
     "crates/searcher",
+    "crates/app",
 ]
 resolver = "2"

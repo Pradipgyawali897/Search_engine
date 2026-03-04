@@ -9,6 +9,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut tf_index: Index = storage::load_index(index_path)?;
     let parser = XmlParser;
 
+    println!("Search Engine Unified App Running...");
+
     loop {
         print!("Search Engine > ");
         io::stdout().flush()?;
