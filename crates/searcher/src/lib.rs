@@ -1,4 +1,4 @@
-pub mod index_lookup_engine;
-pub mod server;
+pub mod engine;
 
-pub use index_lookup_engine::find_occurrences;
+
+pub use engine::lookup::find_occurrences;

@@ -4,9 +4,9 @@ use std::path::PathBuf;
 pub type TF = HashMap<String, usize>;
 pub type Index = HashMap<PathBuf, TF>;
 
+pub mod parser;
 pub mod tokenizer;
-pub mod html_parser;
-pub mod storage_engine;
-pub mod tf_counter;
+pub mod storage;
+pub mod indexing;
 
-pub use tf_counter::{index_directory, index_file};
+pub use indexing::tf_counter::{index_directory, index_file};

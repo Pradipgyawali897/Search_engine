@@ -1,7 +1,6 @@
-use indexer::storage_engine;
-use indexer::html_parser::HtmlParser;
+use indexer::storage::engine as storage_engine;
+use indexer::parser::html::HtmlParser;
 use indexer::{self, Index};
-use searcher::server;
 use std::io::{self, Write};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -9,7 +8,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut tf_index: Index = storage_engine::load_index(index_path)?;
     let parser = HtmlParser;
 
-    println!("Search Engine Unified App Running...");
+    println!("Search Engine Hierarchical App Running...");
 
     loop {
         print!("Search Engine > ");
@@ -36,12 +35,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let (file_count, total_count) = searcher::find_occurrences(keyword, &tf_index);
                 println!("Found '{}' in {} files, total occurrences: {}", keyword, file_count, total_count);
             }
-            "serve" | "start" => {
-                println!("Starting the server...");
-                server::start_server(None);
-            }
             "quit" | "exit" => break,
-            _ => println!("Unknown command: {}. Available: add, search, serve, quit", parts[0]),
+            _ => println!("Unknown command: {}. Available: add, search, quit", parts[0]),
         }
     }
     Ok(())

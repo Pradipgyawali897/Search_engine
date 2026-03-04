@@ -1,5 +1,5 @@
 use std::fs;
-use crate::frontier::Frontier;
+use crate::frontier::manager::Frontier;
 
 pub fn consume_seeds_from_file() -> Vec<String> {
     let content = fs::read_to_string("seed.txt").unwrap_or_else(|_err| {

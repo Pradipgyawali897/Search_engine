@@ -1,5 +1,5 @@
 use crate::tokenizer::Tokenizer;
-use crate::html_parser::Parser;
+use crate::parser::html::Parser;
 use crate::{Index, TF};
 use std::fs;
 use std::path::PathBuf;
