@@ -1,6 +1,7 @@
-use search_engine::indexer::{self, storage};
-use search_engine::parser::xml::XmlParser;
-use search_engine::Index;
+use indexer::storage;
+use indexer::parser::xml::XmlParser;
+use indexer::{self, Index};
+use searcher::server;
 use std::io::{self, Write};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -40,16 +41,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("Usage: search <keyword>");
                     continue;
                 }
-                let keyword = parts[1].to_lowercase();
-                let mut total_count = 0;
-                let mut file_count = 0;
-
-                for (_path, tf) in &tf_index {
-                    if let Some(&count) = tf.get(&keyword) {
-                        total_count += count;
-                        file_count += 1;
-                    }
-                }
+                let keyword = parts[1];
+                let (file_count, total_count) = searcher::find_occurrences(keyword, &tf_index);
 
                 println!(
                     "Found '{}' in {} files, total occurrences: {}",
@@ -58,8 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             "serve" | "start" => {
                 println!("Starting the server...");
-                let port = Option::None;
-                search_engine::server::http::start_server(port);
+                server::start_server(None);
             }
             "quit" | "exit" => break,
             _ => {

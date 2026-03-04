@@ -1,0 +1,8 @@
+[package]
+name = "crawler"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+url = "2"
+# Add other dependencies as needed after analyzing code

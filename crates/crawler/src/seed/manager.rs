@@ -23,6 +23,7 @@ impl SeedManager {
 
         Self { frontier, visited }
     }
+
     pub fn next_url(&mut self) -> Option<Url> {
         self.frontier.pop_front()
     }
@@ -36,6 +37,7 @@ impl SeedManager {
             }
         }
     }
+
     pub fn iter(&self) -> impl Iterator<Item = &Url> {
         self.frontier.iter()
     }

@@ -15,6 +15,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e4de3bc4ea267985becf712dc6d9eed8b04c953b3fcfb339ebc87acd9804901"
 
 [[package]]
+name = "crawler"
+version = "0.1.0"
+dependencies = [
+ "url",
+]
+
+[[package]]
 name = "displaydoc"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -143,6 +150,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "indexer"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "xml",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -200,14 +216,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "search_engine"
+name = "searcher"
 version = "0.1.0"
 dependencies = [
+ "indexer",
  "serde",
  "serde_json",
  "tiny_http",
- "url",
- "xml",
 ]
 
 [[package]]
