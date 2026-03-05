@@ -57,8 +57,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let robot = crawler::get_robot_content(domain).await;
                 println!("Robot: {:#?}", robot);
             }
+            "seed" => {
+                let name = parts.get(1).unwrap_or(&"");
+                if name.is_empty() {
+                    println!("Usage: seed <url_or_filepath>");
+                    continue;
+                }
+                if name.ends_with(".txt") {
+                    match crawler::consume_seeds_from_file(name) {
+                        Ok(seeds) => println!("Loaded {} seeds from file.", seeds.len()),
+                        Err(e) => eprintln!("Error loading seeds: {}", e),
+                    }
+                } else {
+                    let seed = crawler::create_seed(name);
+                    println!("Created seed: {:#?}", seed);
+                }
+            }
             _ => println!(
-                "Unknown command: {}. Available: add, search, quit, robot",
+                "Unknown command: {}. Available: add, search, quit, robot, seed",
                 parts[0]
             ),
         }
