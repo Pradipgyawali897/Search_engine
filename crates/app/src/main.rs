@@ -1,83 +1,33 @@
 use indexer::parser::html::HtmlParser;
 use indexer::storage::engine as storage_engine;
 use indexer::{self, Index};
-use std::io::{self, Write};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let index_path = "index.json";
-    let mut tf_index: Index = storage_engine::load_index(index_path)?;
-    let parser = HtmlParser;
+    let _tf_index: Index = storage_engine::load_index(index_path)?;
+    let _parser = HtmlParser;
 
-    println!("Search Engine Hierarchical App Running...");
+    println!("Search Engine Single Flow Execution...");
 
-    loop {
-        print!("Search Engine > ");
-        io::stdout().flush()?;
-        let mut input = String::new();
-        io::stdin().read_line(&mut input)?;
-        let input = input.trim();
-        if input.is_empty() {
-            continue;
-        }
-        let parts: Vec<&str> = input.splitn(2, ' ').collect();
-        match parts[0] {
-            "add" => {
-                let folder = parts.get(1).unwrap_or(&"");
-                if folder.is_empty() {
-                    println!("Usage: add <folder>");
-                    continue;
-                }
-                if let Err(e) = indexer::index_directory(folder, &mut tf_index, &parser) {
-                    eprintln!("Error indexing: {}", e);
-                } else {
-                    storage_engine::save_index(index_path, &tf_index)?;
-                    println!("Indexed {} files.", tf_index.len());
-                }
-            }
-            "search" => {
-                let keyword = parts.get(1).unwrap_or(&"");
-                if keyword.is_empty() {
-                    println!("Usage: search <keyword>");
-                    continue;
-                }
-                let (file_count, total_count) = searcher::find_occurrences(keyword, &tf_index);
-                println!(
-                    "Found '{}' in {} files, total occurrences: {}",
-                    keyword, file_count, total_count
-                );
-            }
-            "quit" | "exit" => break,
-            "robot" => {
-                let domain = parts.get(1).unwrap_or(&"");
-                if domain.is_empty() {
-                    println!("Usage: robot <domain>");
-                    continue;
-                }
-                let robot = crawler::get_robot_content(domain).await;
-                println!("Robot: {:#?}", robot);
-            }
-            "seed" => {
-                let name = parts.get(1).unwrap_or(&"");
-                if name.is_empty() {
-                    println!("Usage: seed <url_or_filepath>");
-                    continue;
-                }
-                if name.ends_with(".txt") {
-                    match crawler::consume_seeds_from_file(name) {
-                        Ok(seeds) => println!("Loaded {} seeds from file.", seeds.len()),
-                        Err(e) => eprintln!("Error loading seeds: {}", e),
-                    }
-                } else {
-                    let seed = crawler::create_seed(name);
-                    println!("Created seed: {:#?}", seed);
-                }
-            }
-            _ => println!(
-                "Unknown command: {}. Available: add, search, quit, robot, seed",
-                parts[0]
-            ),
+    let seed_file = "seeds.txt";
+    let seeds = crawler::consume_seeds_from_file(seed_file);
+
+    if seeds.is_empty() {
+        println!("No seeds found in {}. Please add some URLs to it.", seed_file);
+        return Ok(());
+    }
+
+    println!("Found {} seeds. Fetching robots.txt for each...", seeds.len());
+
+    for (i, seed) in seeds.iter().enumerate() {
+        println!("\n[{}/{}] Processing: {}", i + 1, seeds.len(), seed);
+        let robot = crawler::get_robot_content(seed).await;
+        if robot.is_none() {
+            println!("No robots.txt found or error occurred for {}", seed);
         }
     }
+
+    println!("\nExecution completed.");
     Ok(())
 }
