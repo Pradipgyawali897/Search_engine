@@ -1,4 +1,6 @@
-async fn check_robot(domain: &str) -> Result<Option<String>, reqwest::Error> {
+use reqwest;
+
+pub async fn check_robot(domain: &str) -> Result<Option<String>, reqwest::Error> {
     let url = format!("https://{}/robots.txt", domain);
 
     let resp = reqwest::get(&url).await?;

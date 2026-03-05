@@ -48,8 +48,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 );
             }
             "quit" | "exit" => break,
+            "robot" => {
+                let domain = parts.get(1).unwrap_or(&"");
+                if domain.is_empty() {
+                    println!("Usage: robot <domain>");
+                    continue;
+                }
+                let robot = crawler::get_robot_content(domain).await;
+                println!("Robot: {:#?}", robot);
+            }
             _ => println!(
-                "Unknown command: {}. Available: add, search, quit",
+                "Unknown command: {}. Available: add, search, quit, robot",
                 parts[0]
             ),
         }
