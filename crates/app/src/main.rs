@@ -26,6 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if robot.is_none() {
             println!("No robots.txt found or error occurred for {}", seed);
         }
+        
     }
 
     println!("\nExecution completed.");
