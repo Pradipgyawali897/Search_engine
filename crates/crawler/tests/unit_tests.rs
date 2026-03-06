@@ -22,3 +22,4 @@ fn test_frontier_deduplication() {
     let urls: Vec<&Url> = manager.iter().collect();
     assert_eq!(urls.len(), 1);
 }
+

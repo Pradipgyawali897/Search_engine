@@ -22,6 +22,7 @@ pub fn normalize_url(input: &str) -> Option<String> {
         }
         _ => {}
     }
-
-    Some(url.to_string())
+    url.set_path("");
+    let url_str = url.host_str();
+    url_str.map(|str| str.to_string())
 }
