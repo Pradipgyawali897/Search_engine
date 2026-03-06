@@ -8,7 +8,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _tf_index: Index = storage_engine::load_index(index_path)?;
     let _parser = HtmlParser;
 
-    println!("Search Engine Single Flow Execution...");
+    println!("Pernox Kernel Execution...");
 
     let seed_file = "seeds.txt";
     let seeds = crawler::consume_seeds_from_file(seed_file);
