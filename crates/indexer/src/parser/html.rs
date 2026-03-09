@@ -1,6 +1,6 @@
-use std::fs::File;
+use scraper::Html;
 use std::path::PathBuf;
-use xml::reader::{EventReader, XmlEvent};
+use std::fs;
 
 pub trait Parser {
     fn parse(&self, path: &PathBuf) -> Result<String, Box<dyn std::error::Error>>;
@@ -9,16 +9,18 @@ pub trait Parser {
 pub struct HtmlParser;
 
 impl Parser for HtmlParser {
-    fn parse(&self, file_path: &PathBuf) -> Result<String, Box<dyn std::error::Error>> {
-        let file = File::open(file_path)?;
-        let er = EventReader::new(file);
-        let mut content = String::new();
-        for event in er {
-            match event? {
-                XmlEvent::Characters(text) => content.push_str(&text),
-                _ => {}
+    fn parse(&self, path: &PathBuf) -> Result<String, Box<dyn std::error::Error>> {
+        let content = fs::read_to_string(path)?;
+        let document = Html::parse_document(&content);
+        
+        // Simple text extraction from the parsed HTML document
+        let mut text = String::new();
+        for node in document.root_element().descendants() {
+            if let Some(t) = node.value().as_text() {
+                text.push_str(t);
+                text.push(' ');
             }
         }
-        Ok(content)
+        Ok(text)
     }
 }

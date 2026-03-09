@@ -1,7 +1,7 @@
 use crate::tokenizer::Tokenizer;
-use crate::parser::html::Parser;
 use crate::{Index, TF};
 use std::fs;
+use crate::parser::html::{HtmlParser, Parser};
 use std::path::PathBuf;
 
 pub fn index_file(path: &PathBuf, parser: &dyn Parser) -> Result<TF, Box<dyn std::error::Error>> {
