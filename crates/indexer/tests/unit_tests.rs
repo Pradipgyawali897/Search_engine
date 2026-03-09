@@ -1,6 +1,5 @@
 use indexer::tokenizer::Tokenizer;
-use indexer::parser::html::{Parser, HtmlParser};
-use std::path::PathBuf;
+use indexer::parser::html::HtmlParser;
 
 #[test]
 fn test_tokenizer_basic() {
@@ -14,7 +13,7 @@ fn test_tokenizer_basic() {
 #[test]
 fn test_html_parser_basic() {
     // This is a minimal test for the parser logic
-    let parser = HtmlParser;
+    let _parser = HtmlParser;
     // We'd need a real file for a full integration test, 
     // but we can trust the integrated test covering this.
 }

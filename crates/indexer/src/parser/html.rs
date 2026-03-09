@@ -1,19 +1,18 @@
 use scraper::Html;
-use std::path::PathBuf;
-use std::fs;
+use crawler::parser::server::fetch_html::get_html_content;
 
+#[allow(async_fn_in_trait)]
 pub trait Parser {
-    fn parse(&self, path: &PathBuf) -> Result<String, Box<dyn std::error::Error>>;
+    async fn parse(&self, domain: &str) -> Result<String, Box<dyn std::error::Error>>;
 }
 
 pub struct HtmlParser;
 
 impl Parser for HtmlParser {
-    fn parse(&self, path: &PathBuf) -> Result<String, Box<dyn std::error::Error>> {
-        let content = fs::read_to_string(path)?;
+    async fn parse(&self, domain: &str) -> Result<String, Box<dyn std::error::Error>> {
+        let content = get_html_content(domain).await.ok_or("Failed to fetch HTML content")?;
         let document = Html::parse_document(&content);
         
-        // Simple text extraction from the parsed HTML document
         let mut text = String::new();
         for node in document.root_element().descendants() {
             if let Some(t) = node.value().as_text() {

@@ -747,6 +747,7 @@ dependencies = [
  "scraper",
  "serde",
  "serde_json",
+ "tokio",
  "xml",
 ]
 

@@ -9,4 +9,4 @@ pub mod tokenizer;
 pub mod storage;
 pub mod indexing;
 
-pub use indexing::tf_counter::{index_directory, index_file};
+pub use indexing::tf_counter::index_file;

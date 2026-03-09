@@ -25,8 +25,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let robot = crawler::get_robot_content(seed).await;
         if robot.is_none() {
             println!("No robots.txt found or error occurred for {}", seed);
+        } else {
+            println!("Indexing: {}", seed);
+            match indexer::index_file(seed, HtmlParser).await {
+                Ok(tf) => {
+                    println!("Successfully indexed! Found {} unique tokens.", tf.len());
+                }
+                Err(err) => {
+                    eprintln!("Failed to index {}: {}", seed, err);
+                }
+            }
         }
-        
     }
 
     println!("\nExecution completed.");

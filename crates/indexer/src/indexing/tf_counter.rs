@@ -1,11 +1,9 @@
 use crate::tokenizer::Tokenizer;
-use crate::{Index, TF};
-use std::fs;
-use crate::parser::html::{HtmlParser, Parser};
-use std::path::PathBuf;
+use crate::TF;
+use crate::parser::html::Parser;
 
-pub fn index_file(path: &PathBuf, parser: &dyn Parser) -> Result<TF, Box<dyn std::error::Error>> {
-    let content_str = parser.parse(path)?;
+pub async fn index_file(domain: &str, parser: impl Parser) -> Result<TF, Box<dyn std::error::Error>> {
+    let content_str = parser.parse(domain).await?;
     let content: Vec<char> = content_str.chars().collect();
     let mut tf = TF::new();
     let mut tokenizer = Tokenizer::new(&content);
@@ -14,23 +12,4 @@ pub fn index_file(path: &PathBuf, parser: &dyn Parser) -> Result<TF, Box<dyn std
         *tf.entry(token).or_insert(0) += 1;
     }
     Ok(tf)
-}
-
-pub fn index_directory(dir_path: &str, tf_index: &mut Index, parser: &dyn Parser) -> Result<(), Box<dyn std::error::Error>> {
-    let dir = fs::read_dir(dir_path)?;
-    for entry in dir {
-        let entry = entry?;
-        let path = entry.path();
-        if path.is_dir() {
-            index_directory(path.to_str().unwrap(), tf_index, parser)?;
-            continue;
-        }
-        if let Some(ext) = path.extension() {
-            let ext = ext.to_string_lossy().to_lowercase();
-            if ext != "xhtml" && ext != "xml" && ext != "html" { continue; }
-        } else { continue; }
-        let tf = index_file(&path, parser)?;
-        tf_index.insert(path, tf);
-    }
-    Ok(())
 }
