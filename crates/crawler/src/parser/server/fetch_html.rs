@@ -1,5 +1,9 @@
-pub async fn get_html_content(domain:&str) -> Option<String> {
-    let url = format!("https://{}/", domain);
+pub async fn get_html_content(domain: &str) -> Option<String> {
+    let url = if domain.starts_with("http://") || domain.starts_with("https://") {
+        domain.to_string()
+    } else {
+        format!("https://{}/", domain)
+    };
     let resp = match reqwest::get(&url).await {
         Ok(r) => r,
         Err(err) => {

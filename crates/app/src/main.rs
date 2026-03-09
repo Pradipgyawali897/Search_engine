@@ -5,7 +5,7 @@ use indexer::{self, Index};
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let index_path = "index.json";
-    let _tf_index: Index = storage_engine::load_index(index_path)?;
+    let mut tf_index: Index = storage_engine::load_index(index_path)?;
     let _parser = HtmlParser;
 
     println!("Pernox Kernel Execution...");
@@ -30,6 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             match indexer::index_file(seed, HtmlParser).await {
                 Ok(tf) => {
                     println!("Successfully indexed! Found {} unique tokens.", tf.len());
+                    tf_index.insert(std::path::PathBuf::from(seed), tf);
                 }
                 Err(err) => {
                     eprintln!("Failed to index {}: {}", seed, err);
@@ -37,6 +38,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
+
+    println!("Saving index to {}...", index_path);
+    storage_engine::save_index(index_path, &tf_index)?;
 
     println!("\nExecution completed.");
     Ok(())
