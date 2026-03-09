@@ -17,7 +17,7 @@ optimized for modern hardware.
 
 The kernel is divided into several primary subsystems:
 
-  - Crawler: Discovery of web assets and enforcement of robots.txt.
+  - Spyder: Discovery of web assets and enforcement of robots.txt.
   - Indexer: Content parsing and term frequency computation.
   - Searcher: Optimized query lookup engine.
   - User Space (App): The CLI gateway for user interaction.
@@ -29,7 +29,7 @@ follows the Linux kernel's documentation style.
 
   - Documentation/index.md: Top-level entry point.
   - Documentation/admin-guide/: Configuration and execution instructions.
-  - Documentation/crawler/, indexer/, searcher/: Subsystem deep-dives.
+  - Documentation/spyder/, indexer/, searcher/: Subsystem deep-dives.
 
 Please read the Documentation/index.md file as a starting point.
 

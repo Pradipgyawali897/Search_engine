@@ -8,7 +8,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.149"
 xml = "1.0"
 scraper = "0.18.1"
-crawler = { path = "../crawler" }
+spyder = { path = "../spyder" }
 
 [dev-dependencies]
 tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }

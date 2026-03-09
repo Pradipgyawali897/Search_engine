@@ -1,5 +1,5 @@
 use scraper::Html;
-use crawler::parser::server::fetch_html::get_html_content;
+use spyder::parser::server::fetch_html::get_html_content;
 
 use crate::parser::Parser;
 

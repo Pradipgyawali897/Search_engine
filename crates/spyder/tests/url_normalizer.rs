@@ -1,4 +1,4 @@
-use crawler::url_handler::url_normalizer::normalize_url;
+use spyder::url_handler::url_normalizer::normalize_url;
 
 #[test]
 fn test_url_normalizer() {

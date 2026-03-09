@@ -1,4 +1,4 @@
-use crawler::robot::utils::parse_robots;
+use spyder::robot::utils::parse_robots;
 
 #[test]
     fn test_parse_robots_case_insensitive() {

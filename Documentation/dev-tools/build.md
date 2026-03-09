@@ -27,6 +27,6 @@ cargo run -p app
 
 To run individual crate tests:
 ```bash
-cargo test -p crawler
+cargo test -p spyder
 cargo test -p indexer
 ```

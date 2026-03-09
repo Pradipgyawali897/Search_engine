@@ -7,7 +7,7 @@ This guide describes how to configure, boot, and manage the Pernox kernel.
 ## Prerequisites
 
 - Rust Toolchain (Edition 2024)
-- Network connectivity (for Crawler discovery)
+- Network connectivity (for Spyder discovery)
 
 ## Initialization
 

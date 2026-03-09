@@ -19,12 +19,12 @@ dependencies = [
 name = "app"
 version = "0.1.0"
 dependencies = [
- "crawler",
  "indexer",
  "reqwest 0.13.2",
  "searcher",
  "serde",
  "serde_json",
+ "spyder",
  "tokio",
 ]
 
@@ -184,14 +184,6 @@ name = "core-foundation-sys"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
-
-[[package]]
-name = "crawler"
-version = "0.1.0"
-dependencies = [
- "reqwest 0.11.27",
- "url",
-]
 
 [[package]]
 name = "cssparser"
@@ -743,10 +735,10 @@ dependencies = [
 name = "indexer"
 version = "0.1.0"
 dependencies = [
- "crawler",
  "scraper",
  "serde",
  "serde_json",
+ "spyder",
  "tokio",
  "xml",
 ]
@@ -1655,6 +1647,14 @@ checksum = "86f4aa3ad99f2088c990dfa82d367e19cb29268ed67c574d10d0a4bfe71f07e0"
 dependencies = [
  "libc",
  "windows-sys 0.60.2",
+]
+
+[[package]]
+name = "spyder"
+version = "0.1.0"
+dependencies = [
+ "reqwest 0.11.27",
+ "url",
 ]
 
 [[package]]

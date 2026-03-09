@@ -1,6 +1,6 @@
-# Crawler Subsystem
+# Spyder Subsystem
 
-The crawler is responsible for the discovery and retrieval of web assets.
+The spyder is responsible for the discovery and retrieval of web assets.
 
 ## Core Modules
 
@@ -13,5 +13,8 @@ Implements the Robots Exclusion Protocol. It fetches `/robots.txt` from every di
 ### 3. URL Normalizer
 Sanitizes discovered links to prevent infinite loops and duplicate indexing (e.g., removing fragments and handling trailing slashes).
 
-## DNS Resolution
-The crawler includes a custom DNS resolver kernel to map hostnames to IP addresses before initiating TCP handshakes.
+### 4. DNS Resolver
+The spyder includes a custom DNS resolver kernel to map hostnames to IP addresses before initiating TCP handshakes.
+
+### 5. URL Fetcher
+This module is responsible for fetching the content of a URL. It uses the `reqwest` crate to make HTTP requests and returns the content as a string.

@@ -1,5 +1,5 @@
-use crawler::dns::resolver;
-use crawler::Frontier;
+use spyder::dns::resolver;
+use spyder::Frontier;
 use url::Url;
 
 #[test]

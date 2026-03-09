@@ -14,6 +14,6 @@ cargo run -p app
 
 Other crates can consume the following core functionalities:
 
-- `crawler::get_robot_content(url)`: Fetches robots.txt rules.
+- `spyder::get_robot_content(url)`: Fetches robots.txt rules.
 - `indexer::tf_counter::index_file(path)`: Manual indexing of a single file.
 - `searcher::find_occurrences(index, query)`: Search for a term in the index.

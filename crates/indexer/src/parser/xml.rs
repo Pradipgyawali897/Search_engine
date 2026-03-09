@@ -1,6 +1,6 @@
 use crate::parser::Parser;
 use xml::reader::{EventReader, XmlEvent};
-use crawler::parser::server::fetch_html::get_html_content;
+use spyder::parser::server::fetch_html::get_html_content;
 
 pub struct XmlParser;
 

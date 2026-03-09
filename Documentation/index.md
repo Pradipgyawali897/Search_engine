@@ -13,7 +13,7 @@ The following manuals are written for users of Pernox.
 
 The following manuals are written for developers who want to modify or extend the Pernox kernel.
 
-* [Crawler Subsystem](crawler/index.md): Deep dive into the web traversal engine.
+* [Spyder Subsystem](spyder/index.md): Deep dive into the web traversal engine.
 * [Indexer Subsystem](indexer/index.md): Understanding the term frequency and storage logic.
 * [Searcher Subsystem](searcher/index.md): Architecture of the query lookup engine.
 * [Build System](dev-tools/build.md): Guide to the Cargo workspace and compilation flags.
