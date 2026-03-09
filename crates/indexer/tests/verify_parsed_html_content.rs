@@ -1,4 +1,4 @@
-use indexer::parser::html::{HtmlParser, Parser};
+use indexer::{HtmlParser, Parser};
 
 #[tokio::test]
 async fn verify_parsed_html_content() {

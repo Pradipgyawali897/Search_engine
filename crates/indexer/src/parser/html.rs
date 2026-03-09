@@ -1,10 +1,7 @@
 use scraper::Html;
 use crawler::parser::server::fetch_html::get_html_content;
 
-#[allow(async_fn_in_trait)]
-pub trait Parser {
-    async fn parse(&self, domain: &str) -> Result<String, Box<dyn std::error::Error>>;
-}
+use crate::parser::Parser;
 
 pub struct HtmlParser;
 

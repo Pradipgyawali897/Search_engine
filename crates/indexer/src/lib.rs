@@ -9,4 +9,7 @@ pub mod tokenizer;
 pub mod storage;
 pub mod indexing;
 
+pub use parser::html::HtmlParser;
+pub use parser::xml::XmlParser;
+pub use parser::Parser;
 pub use indexing::tf_counter::index_file;

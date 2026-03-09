@@ -1,6 +1,6 @@
 use crate::tokenizer::Tokenizer;
 use crate::TF;
-use crate::parser::html::Parser;
+use crate::parser::Parser;
 
 pub async fn index_file(domain: &str, parser: impl Parser) -> Result<TF, Box<dyn std::error::Error>> {
     let content_str = parser.parse(domain).await?;
