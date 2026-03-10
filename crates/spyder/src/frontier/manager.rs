@@ -4,7 +4,7 @@ use url::Url;
 #[derive(Debug)]
 pub struct Frontier {
     frontier: VecDeque<Url>,
-    visited: HashSet<String>,
+    visited: HashSet<Url>,
 }
 
 impl Frontier {
@@ -14,9 +14,8 @@ impl Frontier {
 
         for seed in seeds {
             if let Ok(parsed) = Url::parse(seed) {
-                let normalized = parsed.to_string();
-                if visited.insert(normalized.clone()) {
-                    frontier.push_back(Url::parse(&normalized).unwrap());
+                if visited.insert(parsed.clone()) {
+                    frontier.push_back(parsed);
                 }
             }
         }
@@ -30,10 +29,8 @@ impl Frontier {
 
     pub fn add_url(&mut self, link: &str) {
         if let Ok(parsed) = Url::parse(link) {
-            let normalized = parsed.to_string();
-
-            if self.visited.insert(normalized.clone()) {
-                self.frontier.push_back(Url::parse(&normalized).unwrap());
+            if self.visited.insert(parsed.clone()) {
+                self.frontier.push_back(parsed);
             }
         }
     }

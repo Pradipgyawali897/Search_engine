@@ -14,3 +14,5 @@ https://lh3.googleusercontent.com/ogw/default-user=s24
 https://lh3.googleusercontent.com/ogw/default-user=s24
 https://lh3.googleusercontent.com/ogw/default-user=s24
 https://lh3.googleusercontent.com/ogw/default-user=s96
+https://w.wiki/4wJS.
+https://phabricator.wikimedia.org/T400119.
