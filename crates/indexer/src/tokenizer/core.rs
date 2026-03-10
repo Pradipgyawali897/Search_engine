@@ -1,6 +1,4 @@
-use url::Url;
-use std::fs::OpenOptions;
-use std::io::Write;
+use super::utils::{is_valid_url, save_url};
 
 pub struct Tokenizer<'a> {
     content: &'a [char],
@@ -11,22 +9,20 @@ impl<'a> Tokenizer<'a> {
         Self { content }
     }
 
+    #[inline]
     fn starts_with_str(&self, prefix: &str) -> bool {
-        let prefix_chars: Vec<char> = prefix.chars().collect();
-        if self.content.len() < prefix_chars.len() {
+        if self.content.len() < prefix.len() {
             return false;
         }
-        &self.content[..prefix_chars.len()] == &prefix_chars[..]
-    }
-
-    fn save_url(url: &str) {
-        if let Ok(mut file) = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("discovered_urls.txt")
-        {
-            let _ = writeln!(file, "{}", url);
+        
+        let mut i = 0;
+        for c in prefix.chars() {
+            if self.content[i] != c {
+                return false;
+            }
+            i += 1;
         }
+        true
     }
 
     pub fn chop(&mut self, n: usize) -> &'a [char] {
@@ -46,18 +42,10 @@ impl<'a> Tokenizer<'a> {
             let url_chars = self.take_while(|c| !c.is_whitespace() && c != '<' && c != '>' && c != '"' && c != '\'');
             let url_str: String = url_chars.iter().collect();
             
-            let to_validate = if url_str.starts_with("www.") {
-                format!("https://{}", url_str)
-            } else {
-                url_str.clone()
-            };
-
-            if Url::parse(&to_validate).is_ok() {
-                Self::save_url(&url_str);
-                return Some(url_chars);
-            } else {
-                return Some(url_chars);
+            if is_valid_url(&url_str) {
+                save_url(&url_str);
             }
+            return Some(url_chars);
         }
 
         let first = self.content[0];

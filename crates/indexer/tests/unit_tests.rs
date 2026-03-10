@@ -11,6 +11,18 @@ fn test_tokenizer_basic() {
 }
 
 #[test]
+fn test_tokenize_functional() {
+    let tokens = indexer::tokenizer::tokenize("hello world 123");
+    assert_eq!(tokens, vec!["hello", "world", "123"]);
+}
+
+#[test]
+fn test_extract_urls_functional() {
+    let urls = indexer::tokenizer::extract_urls("visit https://google.com and www.rust-lang.org");
+    assert_eq!(urls, vec!["https://google.com", "www.rust-lang.org"]);
+}
+
+#[test]
 fn test_tokenizer_url() {
     let content: Vec<char> = "visit https://google.com for info".chars().collect();
     let mut tokenizer = Tokenizer::new(&content);

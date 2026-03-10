@@ -11,3 +11,10 @@ The indexer transforms raw HTML into a structured searchable index.
 ## Storage Engine
 
 The index is persisted as a JSON file (`index.json`) mapping document paths to their respective TF maps.
+
+## Functional Utilities
+
+The `tokenizer` module also provides functional equivalents for common tasks:
+
+- `tokenizer::tokenize(content)`: Returns a `Vec<String>` of all tokens in a string.
+- `tokenizer::extract_urls(content)`: Specifically identifies and returns a `Vec<String>` of all URLs found in the content, while also updating `discovered_urls.txt`.
