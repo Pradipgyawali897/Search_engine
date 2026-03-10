@@ -18,9 +18,9 @@ optimized for modern hardware.
 The kernel is divided into several primary subsystems:
 
   - Spyder: Discovery of web assets and enforcement of robots.txt.
-  - Indexer: Content parsing and term frequency computation.
+  - Indexer: Content parsing, term frequency computation, and automatic URL tracking/discovery.
   - Searcher: Optimized query lookup engine.
-  - User Space (App): The CLI gateway for user interaction.
+  - User Space (App): The CLI gateway for user interaction with live link detection.
 
 ## DOCUMENTATION
 
