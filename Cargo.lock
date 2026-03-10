@@ -740,6 +740,7 @@ dependencies = [
  "serde_json",
  "spyder",
  "tokio",
+ "url",
  "xml",
 ]
 

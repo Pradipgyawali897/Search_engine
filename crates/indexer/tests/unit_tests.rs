@@ -11,9 +11,13 @@ fn test_tokenizer_basic() {
 }
 
 #[test]
-fn test_html_parser_basic() {
-    // This is a minimal test for the parser logic
-    let _parser = HtmlParser;
-    // We'd need a real file for a full integration test, 
-    // but we can trust the integrated test covering this.
+fn test_tokenizer_url() {
+    let content: Vec<char> = "visit https://google.com for info".chars().collect();
+    let mut tokenizer = Tokenizer::new(&content);
+    assert_eq!(tokenizer.next_token().unwrap().iter().collect::<String>(), "visit");
+    assert_eq!(tokenizer.next_token().unwrap().iter().collect::<String>(), "https://google.com");
+    assert_eq!(tokenizer.next_token().unwrap().iter().collect::<String>(), "for");
+    
+    // Check if the file was created
+    assert!(std::path::Path::new("discovered_urls.txt").exists());
 }
