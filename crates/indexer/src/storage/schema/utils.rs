@@ -1,5 +1,6 @@
 mod schema;
 
+
 impl schema::Document {
     pub fn new(doc_id: u64, url: String, path: String, title: String, content_length: u32, last_modified: u64) -> Self {
         Self {
