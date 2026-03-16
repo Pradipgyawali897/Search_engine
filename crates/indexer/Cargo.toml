@@ -11,6 +11,7 @@ scraper = "0.18.1"
 url = "2"
 spyder = { path = "../spyder" }
 rand = "0.8"
+lazy_static = "1.4"
 
 [dev-dependencies]
 tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }

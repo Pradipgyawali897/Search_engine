@@ -1,5 +1,5 @@
-mod schema;
-
+use std::collections::HashMap;
+use super::schema;
 
 impl schema::Document {
     pub fn new(doc_id: u64, url: String, path: String, title: String, content_length: u32, last_modified: u64) -> Self {
@@ -30,10 +30,9 @@ impl schema::Document {
     pub fn get_last_modified(&self) -> u64 {
         self.last_modified
     }
-};
+}
 
-
-impl schema::Posting{
+impl schema::Posting {
     pub fn new(doc_id: u64, term_frequency: u32) -> Self {
         Self {
             doc_id,
@@ -46,10 +45,9 @@ impl schema::Posting{
     pub fn get_term_frequency(&self) -> u32 {
         self.term_frequency
     }
-};
+}
 
-
-impl schema::Index{
+impl schema::Index {
     pub fn new() -> Self {
         Self {
             dictionary: HashMap::new(),

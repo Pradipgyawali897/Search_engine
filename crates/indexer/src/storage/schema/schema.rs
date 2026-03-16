@@ -1,5 +1,7 @@
 use std::collections::HashMap;
+use serde::{Serialize, Deserialize};
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Document {
     pub doc_id: u64,
     pub url: String,
@@ -9,13 +11,22 @@ pub struct Document {
     pub last_modified: u64,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Posting {
     pub doc_id: u64,
     pub term_frequency: u32,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Index {
     pub dictionary: HashMap<String, Vec<Posting>>,
     pub documents: HashMap<u64, Document>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DiscoveredLink {
+    pub url: String,
+    pub category: String,
+    pub timestamp: u64,
 }
 
