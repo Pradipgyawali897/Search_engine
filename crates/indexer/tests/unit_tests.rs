@@ -1,5 +1,5 @@
 use indexer::tokenizer::Tokenizer;
-use indexer::HtmlParser;
+// use indexer::HtmlParser;
 
 #[test]
 fn test_tokenizer_basic() {

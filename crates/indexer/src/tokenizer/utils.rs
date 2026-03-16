@@ -6,12 +6,14 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use std::collections::HashSet;
 use std::sync::Mutex;
 use lazy_static::lazy_static;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 use super::link_filter::LinkCategory;
 use crate::storage::schema::schema::DiscoveredLink;
 
 lazy_static! {
-    static ref VISITED_URLS: Mutex<HashSet<String>> = Mutex::new(HashSet::new());
+    static ref VISITED_URLS: Mutex<HashSet<u64>> = Mutex::new(HashSet::new());
 }
 
 pub fn is_valid_url(s: &str) -> bool {
@@ -27,6 +29,12 @@ pub fn is_valid_url(s: &str) -> bool {
     }
 }
 
+pub fn create_hash(s: &str) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    s.hash(&mut hasher);
+    hasher.finish()
+}
+
 pub fn save_url(url: &str, category: LinkCategory) {
     let category_str = match category {
         LinkCategory::Visitable => "visitable",
@@ -36,8 +44,9 @@ pub fn save_url(url: &str, category: LinkCategory) {
     let content_to_save = if category_str == "visitable" {
         let normalized = normalize_url(url).unwrap_or_else(|| url.to_string());
         
+        let hash = create_hash(&normalized);
         let mut visited = VISITED_URLS.lock().unwrap();
-        if !visited.insert(normalized.clone()) {
+        if !visited.insert(hash) {
             return;
         }
         normalized
