@@ -43,7 +43,8 @@ impl<'a> Tokenizer<'a> {
             let url_str: String = url_chars.iter().collect();
             
             if is_valid_url(&url_str) {
-                save_url(&url_str);
+                let category = super::link_filter::classify_link(&url_str);
+                save_url(&url_str, category);
             }
             return Some(url_chars);
         }

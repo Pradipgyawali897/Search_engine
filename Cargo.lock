@@ -735,6 +735,7 @@ dependencies = [
 name = "indexer"
 version = "0.1.0"
 dependencies = [
+ "rand 0.8.5",
  "scraper",
  "serde",
  "serde_json",

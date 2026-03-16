@@ -1,5 +1,6 @@
 mod core;
-mod utils;
+pub mod utils;
+pub mod link_filter;
 
 pub use core::Tokenizer;
 
