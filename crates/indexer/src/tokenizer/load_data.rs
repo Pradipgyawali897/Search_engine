@@ -20,6 +20,7 @@ pub fn load_visited_urls() {
             Ok(l) if !l.trim().is_empty() => l,
             _ => continue,
         };
+        let line=format!("https://{}",line);
         let url = match normalize_url(&line) {
             Some(u) => u,
             None => continue,
