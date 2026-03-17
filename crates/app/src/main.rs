@@ -1,6 +1,8 @@
 use indexer::parser::html::HtmlParser;
 use indexer::storage::engine as storage_engine;
 use indexer::{self, Index};
+use std::thread;
+use indexer::tokenizer::load_visited_urls;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -10,6 +12,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Pernox Kernel Execution...");
 
+    let handel=thread::spawn(|| {
+        load_visited_urls();
+    });
     let seed_file = "seeds.txt";
     let seeds = spyder::consume_seeds_from_file(seed_file);
 
@@ -19,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     println!("Found {} seeds. Fetching robots.txt for each...", seeds.len());
-
+    handel.join().unwrap();
     for (i, seed) in seeds.iter().enumerate() {
         println!("\n[{}/{}] Processing: {}", i + 1, seeds.len(), seed);
         let robot = spyder::get_robot_content(seed).await;

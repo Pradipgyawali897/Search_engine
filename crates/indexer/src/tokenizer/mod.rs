@@ -1,8 +1,10 @@
 mod core;
 pub mod utils;
 pub mod link_filter;
+pub mod load_data;
 
 pub use core::Tokenizer;
+pub use load_data::load_visited_urls;
 
 pub fn tokenize(content: &str) -> Vec<String> {
     let chars: Vec<char> = content.chars().collect();

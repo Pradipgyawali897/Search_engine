@@ -31,46 +31,42 @@ pub fn create_hash(s: &str) -> u64 {
 }
 
 pub fn save_url(url: &str, category: LinkCategory) {
-    let category_str = match category {
-        LinkCategory::Visitable => "visitable",
-        LinkCategory::Junk => "junk",
-    };
-
-    let content_to_save = if category_str == "visitable" {
-        let normalized = normalize_url(url).unwrap_or_else(|| url.to_string());
-        
-        let hash = create_hash(&normalized);
-        let mut visited = VISITED_URLS.lock().unwrap();
-        if !visited.insert(hash) {
-            return;
+    match category {
+        LinkCategory::Visitable => {
+            let normalized = normalize_url(url).unwrap_or_else(|| url.to_string());
+            let hash = create_hash(&normalized);
+            {
+                let mut visited = VISITED_URLS.lock().unwrap();
+                if !visited.insert(hash) {
+                    return;
+                }
+            }
+            if let Ok(mut file) = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open("visitable_urls.txt")
+            {
+                let _ = writeln!(file, "{}", normalized);
+            }
         }
-        normalized
-    } else {
-        url.to_string()
-    };
-
-    let filename = if category_str == "visitable" {
-        "visitable_urls.json"
-    } else {
-        "junk_urls.json"
-    };
-
-    let discovered_link = DiscoveredLink {
-        url: content_to_save,
-        category: category_str.to_string(),
-        timestamp: SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs(),
-    };
-
-    if let Ok(mut file) = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(filename)
-    {
-        if let Ok(json) = serde_json::to_string(&discovered_link) {
-            let _ = writeln!(file, "{}", json);
+        LinkCategory::Junk => {
+            let discovered_link = DiscoveredLink {
+                url: url.to_string(),
+                category: "junk".to_string(),
+                timestamp: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs(),
+            };
+            if let Ok(mut file) = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open("junk_urls.json")
+            {
+                if let Ok(json) = serde_json::to_string(&discovered_link) {
+                    let _ = writeln!(file, "{}", json);
+                }
+            }
         }
     }
 }
