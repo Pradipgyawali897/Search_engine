@@ -33,7 +33,10 @@ pub fn create_hash(s: &str) -> u64 {
 pub fn save_url(url: &str, category: LinkCategory) {
     match category {
         LinkCategory::Visitable => {
-            let normalized = normalize_url(url).unwrap_or_else(|| url.to_string());
+            let normalized = match normalize_url(url) {
+                Some(u) => u,
+                None => return,
+            };
             let hash = create_hash(&normalized);
             {
                 let mut visited = VISITED_URLS.lock().unwrap();

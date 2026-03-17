@@ -20,7 +20,10 @@ pub fn load_visited_urls() {
             Ok(l) if !l.trim().is_empty() => l,
             _ => continue,
         };
-        let url = normalize_url(&line).unwrap_or(line);
+        let url = match normalize_url(&line) {
+            Some(u) => u,
+            None => continue,
+        };
         let hash = create_hash(&url);
         if !visited.contains(&hash) {
             visited.insert(hash);
