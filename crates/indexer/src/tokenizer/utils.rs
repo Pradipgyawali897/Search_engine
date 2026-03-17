@@ -3,18 +3,13 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use spyder::normalize_url;
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::collections::HashSet;
-use std::sync::Mutex;
-use lazy_static::lazy_static;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use crate::globals::VISITED_URLS;
 
 use super::link_filter::LinkCategory;
 use crate::storage::schema::schema::DiscoveredLink;
 
-lazy_static! {
-    static ref VISITED_URLS: Mutex<HashSet<u64>> = Mutex::new(HashSet::new());
-}
 
 pub fn is_valid_url(s: &str) -> bool {
     let has_prefix = s.starts_with("http://") || s.starts_with("https://") || s.starts_with("www.");
