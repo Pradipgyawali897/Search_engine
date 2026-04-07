@@ -1,4 +1,4 @@
-use indexer::tokenizer::link_filter::{LinkCategory, classify_link, is_junk};
+use indexer::discovery::{LinkCategory, classify_link, is_junk};
 
 #[test]
 fn test_is_junk_extensions() {

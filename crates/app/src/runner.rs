@@ -1,7 +1,7 @@
 use crate::config::AppConfig;
 use crate::error::AppResult;
+use indexer::load_visited_urls;
 use indexer::storage::engine as storage_engine;
-use indexer::tokenizer::load_visited_urls;
 use indexer::{HtmlParser, Index};
 use std::path::Path;
 use std::thread;

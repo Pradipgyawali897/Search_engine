@@ -1,5 +1,3 @@
-use super::utils::{is_valid_url, sanitize_url_candidate, save_url};
-
 pub struct Tokenizer<'a> {
     content: &'a [char],
 }
@@ -15,13 +13,12 @@ impl<'a> Tokenizer<'a> {
             return false;
         }
 
-        let mut i = 0;
-        for c in prefix.chars() {
-            if self.content[i] != c {
+        for (index, ch) in prefix.chars().enumerate() {
+            if self.content[index] != ch {
                 return false;
             }
-            i += 1;
         }
+
         true
     }
 
@@ -42,16 +39,9 @@ impl<'a> Tokenizer<'a> {
             || self.starts_with_str("https://")
             || self.starts_with_str("www.")
         {
-            let url_chars = self.take_while(|c| {
-                !c.is_whitespace() && c != '<' && c != '>' && c != '"' && c != '\''
-            });
-            let url_str: String = url_chars.iter().collect();
-
-            if let Some(url) = sanitize_url_candidate(&url_str).filter(|url| is_valid_url(url)) {
-                let category = super::link_filter::classify_link(&url);
-                save_url(&url, category);
-            }
-            return Some(url_chars);
+            return Some(
+                self.take_while(|c| !c.is_whitespace() && !matches!(c, '<' | '>' | '"' | '\'')),
+            );
         }
 
         let first = self.content[0];

@@ -2,26 +2,25 @@ use scraper::{Html, Selector};
 use spyder::parser::server::fetch_html::get_html_content;
 use url::Url;
 
+use crate::ParsedDocument;
 use crate::parser::Parser;
-use crate::tokenizer::link_filter::classify_link;
-use crate::tokenizer::utils::save_url;
 
 pub struct HtmlParser;
 
 impl Parser for HtmlParser {
-    async fn parse(&self, domain: &str) -> Result<String, Box<dyn std::error::Error>> {
+    async fn parse(&self, domain: &str) -> Result<ParsedDocument, Box<dyn std::error::Error>> {
         let content = get_html_content(domain)
             .await
             .ok_or("Failed to fetch HTML content")?;
         let document = Html::parse_document(&content);
         let base_url = create_base_url(domain);
 
+        let mut links = Vec::new();
         let selector = Selector::parse("a[href]").unwrap();
         for element in document.select(&selector) {
             if let Some(href) = element.value().attr("href") {
                 if let Some(link) = resolve_link(base_url.as_ref(), href) {
-                    let category = classify_link(&link);
-                    save_url(&link, category);
+                    links.push(link);
                 }
             }
         }
@@ -61,7 +60,7 @@ impl Parser for HtmlParser {
             }
         }
 
-        Ok(segments.join(" "))
+        Ok(ParsedDocument::new(segments.join(" ")).with_links(links))
     }
 }
 

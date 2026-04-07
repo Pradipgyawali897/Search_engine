@@ -1,3 +1,4 @@
+use crate::ParsedDocument;
 use crate::parser::Parser;
 use spyder::parser::server::fetch_html::get_html_content;
 use xml::reader::{EventReader, XmlEvent};
@@ -5,7 +6,7 @@ use xml::reader::{EventReader, XmlEvent};
 pub struct XmlParser;
 
 impl Parser for XmlParser {
-    async fn parse(&self, domain: &str) -> Result<String, Box<dyn std::error::Error>> {
+    async fn parse(&self, domain: &str) -> Result<ParsedDocument, Box<dyn std::error::Error>> {
         let content = get_html_content(domain)
             .await
             .ok_or("Failed to fetch XML content")?;
@@ -24,6 +25,6 @@ impl Parser for XmlParser {
                 _ => {}
             }
         }
-        Ok(text.trim().to_string())
+        Ok(ParsedDocument::new(text.trim().to_string()))
     }
 }

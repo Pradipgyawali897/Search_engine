@@ -1,5 +1,4 @@
 use indexer::tokenizer::Tokenizer;
-// use indexer::HtmlParser;
 
 #[test]
 fn test_tokenizer_basic() {
@@ -51,7 +50,10 @@ fn test_tokenize_handles_web_text_noise() {
 #[test]
 fn test_extract_urls_functional() {
     let urls = indexer::tokenizer::extract_urls("visit https://google.com and www.rust-lang.org");
-    assert_eq!(urls, vec!["https://google.com", "www.rust-lang.org"]);
+    assert_eq!(
+        urls,
+        vec!["https://google.com/", "https://www.rust-lang.org/"]
+    );
 }
 
 #[test]
@@ -64,7 +66,7 @@ fn test_tokenize_skips_urls_from_text_index() {
 fn test_extract_urls_trims_trailing_punctuation() {
     let urls =
         indexer::tokenizer::extract_urls("Docs: https://www.rust-lang.org/, and https://docs.rs).");
-    assert_eq!(urls, vec!["https://www.rust-lang.org/", "https://docs.rs"]);
+    assert_eq!(urls, vec!["https://www.rust-lang.org/", "https://docs.rs/"]);
 }
 
 #[test]
@@ -83,7 +85,4 @@ fn test_tokenizer_url() {
         tokenizer.next_token().unwrap().iter().collect::<String>(),
         "for"
     );
-
-    // Check if the file was created
-    assert!(std::path::Path::new("discovered_urls.txt").exists());
 }
