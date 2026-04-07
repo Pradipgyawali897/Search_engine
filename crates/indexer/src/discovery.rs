@@ -155,7 +155,9 @@ fn parse_url(candidate: &str) -> Option<Url> {
         return Some(url);
     }
 
-    if candidate.contains("://") {
+    let looks_like_hostname = candidate.starts_with("www.")
+        || (candidate.contains('.') && candidate.chars().any(|ch| ch.is_alphabetic()));
+    if candidate.contains("://") || !looks_like_hostname {
         return None;
     }
 

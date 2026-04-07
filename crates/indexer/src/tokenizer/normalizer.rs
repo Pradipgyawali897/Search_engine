@@ -49,7 +49,12 @@ pub fn normalize_token(raw: &str) -> Vec<String> {
 }
 
 fn canonicalize_token(raw: &str) -> String {
-    let trimmed = raw.trim_matches(|c: char| !is_token_edge_char(c));
+    let trimmed = if raw.chars().next().is_some_and(|c| c.is_numeric()) {
+        raw.trim_matches(|c: char| !is_numeric_edge_char(c))
+    } else {
+        raw.trim_matches(|c: char| !is_token_edge_char(c))
+    };
+
     if trimmed.is_empty() {
         return String::new();
     }
@@ -65,6 +70,10 @@ fn canonicalize_token(raw: &str) -> String {
 
 fn is_token_edge_char(c: char) -> bool {
     c.is_alphanumeric() || matches!(c, '-' | '_' | '\'' | '’')
+}
+
+fn is_numeric_edge_char(c: char) -> bool {
+    c.is_numeric() || matches!(c, '.' | ',' | ':' | '/' | '-')
 }
 
 fn push_unique(tokens: &mut Vec<String>, token: String) {
