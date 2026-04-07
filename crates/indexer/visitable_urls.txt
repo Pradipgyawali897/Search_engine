@@ -59,3 +59,5 @@ www.google.com
 /intl/ne/ads/
 /intl/ne/about.html
 www.google.com
+google.com
+google.com

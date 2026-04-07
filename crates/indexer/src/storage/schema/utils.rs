@@ -1,8 +1,15 @@
-use std::collections::HashMap;
 use super::schema;
+use std::collections::HashMap;
 
 impl schema::Document {
-    pub fn new(doc_id: u64, url: String, path: String, title: String, content_length: u32, last_modified: u64) -> Self {
+    pub fn new(
+        doc_id: u64,
+        url: String,
+        path: String,
+        title: String,
+        content_length: u32,
+        last_modified: u64,
+    ) -> Self {
         Self {
             doc_id,
             url,
@@ -58,7 +65,10 @@ impl schema::Index {
         self.documents.insert(document.get_doc_id(), document);
     }
     pub fn add_posting(&mut self, term: String, posting: schema::Posting) {
-        self.dictionary.entry(term).or_insert_with(Vec::new).push(posting);
+        self.dictionary
+            .entry(term)
+            .or_insert_with(Vec::new)
+            .push(posting);
     }
     pub fn get_document(&self, doc_id: u64) -> Option<&schema::Document> {
         self.documents.get(&doc_id)

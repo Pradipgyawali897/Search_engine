@@ -1,22 +1,21 @@
-use url::Url;
-use std::fs::OpenOptions;
-use std::io::Write;
-use spyder::normalize_url;
-use std::time::{SystemTime, UNIX_EPOCH};
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
 use crate::globals::VISITED_URLS;
+use spyder::normalize_url;
+use std::collections::hash_map::DefaultHasher;
+use std::fs::OpenOptions;
+use std::hash::{Hash, Hasher};
+use std::io::Write;
+use std::time::{SystemTime, UNIX_EPOCH};
+use url::Url;
 
 use super::link_filter::LinkCategory;
 use crate::storage::schema::schema::DiscoveredLink;
-
 
 pub fn is_valid_url(s: &str) -> bool {
     let has_prefix = s.starts_with("http://") || s.starts_with("https://") || s.starts_with("www.");
     if !has_prefix {
         return false;
     }
-    
+
     if s.starts_with("www.") {
         Url::parse(&format!("https://{}", s)).is_ok()
     } else {

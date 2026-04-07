@@ -20,4 +20,3 @@ pub async fn get_html_content(domain: &str) -> Option<String> {
         }
     }
 }
-   

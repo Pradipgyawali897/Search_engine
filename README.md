@@ -48,6 +48,17 @@ initial lookup phase.
 
     cargo run -p app
 
+The application layer is now split into focused modules under
+`crates/app/src/`:
+
+  - `config.rs`: runtime path configuration.
+  - `runner.rs`: orchestration of preload, crawl, index, and persistence.
+  - `main.rs`: thin Tokio entry point.
+
+Runtime paths can be overridden without code changes:
+
+    PERNOX_SEED_FILE=custom-seeds.txt PERNOX_INDEX_PATH=custom-index.json cargo run -p app
+
 ## LICENSE
 
 Pernox is licensed under the MIT License. See the LICENSE file for the full

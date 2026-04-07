@@ -1,5 +1,5 @@
-use searcher::find_occurrences;
 use indexer::{Index, TF};
+use searcher::find_occurrences;
 
 #[test]
 fn test_search_basic() {

@@ -13,13 +13,11 @@ pub fn classify_link(url: &str) -> LinkCategory {
 
 pub fn is_junk(url: &str) -> bool {
     let lower_url = url.to_lowercase();
-    
+
     let junk_extensions = [
-        ".jpg", ".jpeg", ".png", ".gif", ".svg", ".bmp", ".webp",
-        ".mp4", ".webm", ".ogg", ".avi", ".mov",
-        ".mp3", ".wav", ".flac",
-        ".pdf", ".doc", ".docx", ".zip", ".tar", ".gz",
-        ".css", ".js", ".json", ".xml",
+        ".jpg", ".jpeg", ".png", ".gif", ".svg", ".bmp", ".webp", ".mp4", ".webm", ".ogg", ".avi",
+        ".mov", ".mp3", ".wav", ".flac", ".pdf", ".doc", ".docx", ".zip", ".tar", ".gz", ".css",
+        ".js", ".json", ".xml",
     ];
 
     for ext in junk_extensions {
@@ -29,9 +27,15 @@ pub fn is_junk(url: &str) -> bool {
     }
 
     let junk_patterns = [
-        "facebook.com", "twitter.com", "instagram.com", "linkedin.com",
-        "google-analytics.com", "googletagmanager.com", "doubleclick.net",
-        "ads.google.com", "adservice.google.com",
+        "facebook.com",
+        "twitter.com",
+        "instagram.com",
+        "linkedin.com",
+        "google-analytics.com",
+        "googletagmanager.com",
+        "doubleclick.net",
+        "ads.google.com",
+        "adservice.google.com",
     ];
 
     for pattern in junk_patterns {

@@ -1,12 +1,14 @@
 use crate::parser::Parser;
-use xml::reader::{EventReader, XmlEvent};
 use spyder::parser::server::fetch_html::get_html_content;
+use xml::reader::{EventReader, XmlEvent};
 
 pub struct XmlParser;
 
 impl Parser for XmlParser {
     async fn parse(&self, domain: &str) -> Result<String, Box<dyn std::error::Error>> {
-        let content = get_html_content(domain).await.ok_or("Failed to fetch XML content")?;
+        let content = get_html_content(domain)
+            .await
+            .ok_or("Failed to fetch XML content")?;
         let parser = EventReader::from_str(&content);
         let mut text = String::new();
 

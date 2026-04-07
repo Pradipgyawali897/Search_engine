@@ -1,5 +1,5 @@
-use std::fs::File;
 use crate::Index;
+use std::fs::File;
 
 pub fn save_index(index_path: &str, tf_index: &Index) -> Result<(), Box<dyn std::error::Error>> {
     let index_file = File::create(index_path)?;

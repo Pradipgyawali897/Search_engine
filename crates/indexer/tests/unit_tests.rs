@@ -5,9 +5,18 @@ use indexer::tokenizer::Tokenizer;
 fn test_tokenizer_basic() {
     let content: Vec<char> = "hello world 123".chars().collect();
     let mut tokenizer = Tokenizer::new(&content);
-    assert_eq!(tokenizer.next_token().unwrap().iter().collect::<String>(), "hello");
-    assert_eq!(tokenizer.next_token().unwrap().iter().collect::<String>(), "world");
-    assert_eq!(tokenizer.next_token().unwrap().iter().collect::<String>(), "123");
+    assert_eq!(
+        tokenizer.next_token().unwrap().iter().collect::<String>(),
+        "hello"
+    );
+    assert_eq!(
+        tokenizer.next_token().unwrap().iter().collect::<String>(),
+        "world"
+    );
+    assert_eq!(
+        tokenizer.next_token().unwrap().iter().collect::<String>(),
+        "123"
+    );
 }
 
 #[test]
@@ -26,10 +35,19 @@ fn test_extract_urls_functional() {
 fn test_tokenizer_url() {
     let content: Vec<char> = "visit https://google.com for info".chars().collect();
     let mut tokenizer = Tokenizer::new(&content);
-    assert_eq!(tokenizer.next_token().unwrap().iter().collect::<String>(), "visit");
-    assert_eq!(tokenizer.next_token().unwrap().iter().collect::<String>(), "https://google.com");
-    assert_eq!(tokenizer.next_token().unwrap().iter().collect::<String>(), "for");
-    
+    assert_eq!(
+        tokenizer.next_token().unwrap().iter().collect::<String>(),
+        "visit"
+    );
+    assert_eq!(
+        tokenizer.next_token().unwrap().iter().collect::<String>(),
+        "https://google.com"
+    );
+    assert_eq!(
+        tokenizer.next_token().unwrap().iter().collect::<String>(),
+        "for"
+    );
+
     // Check if the file was created
     assert!(std::path::Path::new("discovered_urls.txt").exists());
 }

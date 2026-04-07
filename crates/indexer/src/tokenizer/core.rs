@@ -14,7 +14,7 @@ impl<'a> Tokenizer<'a> {
         if self.content.len() < prefix.len() {
             return false;
         }
-        
+
         let mut i = 0;
         for c in prefix.chars() {
             if self.content[i] != c {
@@ -38,10 +38,15 @@ impl<'a> Tokenizer<'a> {
             return None;
         }
 
-        if self.starts_with_str("http://") || self.starts_with_str("https://") || self.starts_with_str("www.") {
-            let url_chars = self.take_while(|c| !c.is_whitespace() && c != '<' && c != '>' && c != '"' && c != '\'');
+        if self.starts_with_str("http://")
+            || self.starts_with_str("https://")
+            || self.starts_with_str("www.")
+        {
+            let url_chars = self.take_while(|c| {
+                !c.is_whitespace() && c != '<' && c != '>' && c != '"' && c != '\''
+            });
             let url_str: String = url_chars.iter().collect();
-            
+
             if is_valid_url(&url_str) {
                 let category = super::link_filter::classify_link(&url_str);
                 save_url(&url_str, category);

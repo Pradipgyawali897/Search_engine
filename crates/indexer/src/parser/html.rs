@@ -9,9 +9,11 @@ pub struct HtmlParser;
 
 impl Parser for HtmlParser {
     async fn parse(&self, domain: &str) -> Result<String, Box<dyn std::error::Error>> {
-        let content = get_html_content(domain).await.ok_or("Failed to fetch HTML content")?;
+        let content = get_html_content(domain)
+            .await
+            .ok_or("Failed to fetch HTML content")?;
         let document = Html::parse_document(&content);
-        
+
         let selector = Selector::parse("a").unwrap();
         for element in document.select(&selector) {
             if let Some(href) = element.value().attr("href") {

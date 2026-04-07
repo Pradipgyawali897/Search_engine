@@ -1,7 +1,7 @@
 mod core;
-pub mod utils;
 pub mod link_filter;
 pub mod load_data;
+pub mod utils;
 
 pub use core::Tokenizer;
 pub use load_data::load_visited_urls;

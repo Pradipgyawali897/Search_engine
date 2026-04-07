@@ -36,7 +36,7 @@ pub fn parse_robots(content: &str) -> Robots {
                     current_group_matches = false;
                     in_directive_block = false;
                 }
-                
+
                 if value == "*" {
                     current_group_matches = true;
                 }

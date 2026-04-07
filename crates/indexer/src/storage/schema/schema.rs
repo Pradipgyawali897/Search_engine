@@ -1,5 +1,5 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Document {
@@ -29,4 +29,3 @@ pub struct DiscoveredLink {
     pub category: String,
     pub timestamp: u64,
 }
-
