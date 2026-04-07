@@ -1,4 +1,4 @@
-use super::utils::{is_valid_url, save_url};
+use super::utils::{is_valid_url, sanitize_url_candidate, save_url};
 
 pub struct Tokenizer<'a> {
     content: &'a [char],
@@ -47,20 +47,21 @@ impl<'a> Tokenizer<'a> {
             });
             let url_str: String = url_chars.iter().collect();
 
-            if is_valid_url(&url_str) {
-                let category = super::link_filter::classify_link(&url_str);
-                save_url(&url_str, category);
+            if let Some(url) = sanitize_url_candidate(&url_str).filter(|url| is_valid_url(url)) {
+                let category = super::link_filter::classify_link(&url);
+                save_url(&url, category);
             }
             return Some(url_chars);
         }
 
         let first = self.content[0];
         if first.is_alphabetic() {
-            Some(self.take_while(|c| c.is_alphanumeric()))
+            Some(self.take_word_token())
         } else if first.is_numeric() {
-            Some(self.take_while(|c| c.is_numeric()))
+            Some(self.take_numeric_token())
         } else {
-            Some(self.chop(1))
+            self.chop(1);
+            self.next_token()
         }
     }
 
@@ -80,4 +81,60 @@ impl<'a> Tokenizer<'a> {
             self.content = &self.content[1..];
         }
     }
+
+    fn take_word_token(&mut self) -> &'a [char] {
+        let mut n = 1;
+        while n < self.content.len() {
+            let current = self.content[n];
+            if current.is_alphanumeric() {
+                n += 1;
+                continue;
+            }
+
+            if is_word_connector(self.content, n) {
+                n += 1;
+                continue;
+            }
+
+            break;
+        }
+
+        self.chop(n)
+    }
+
+    fn take_numeric_token(&mut self) -> &'a [char] {
+        let mut n = 1;
+        while n < self.content.len() {
+            let current = self.content[n];
+            if current.is_numeric() {
+                n += 1;
+                continue;
+            }
+
+            if is_numeric_connector(self.content, n) {
+                n += 1;
+                continue;
+            }
+
+            break;
+        }
+
+        self.chop(n)
+    }
+}
+
+fn is_word_connector(content: &[char], idx: usize) -> bool {
+    matches!(content[idx], '-' | '_' | '\'' | '’')
+        && idx > 0
+        && idx + 1 < content.len()
+        && content[idx - 1].is_alphanumeric()
+        && content[idx + 1].is_alphanumeric()
+}
+
+fn is_numeric_connector(content: &[char], idx: usize) -> bool {
+    matches!(content[idx], '.' | ',' | ':' | '/' | '-')
+        && idx > 0
+        && idx + 1 < content.len()
+        && content[idx - 1].is_numeric()
+        && content[idx + 1].is_numeric()
 }

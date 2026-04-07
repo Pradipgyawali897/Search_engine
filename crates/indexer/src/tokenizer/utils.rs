@@ -23,6 +23,67 @@ pub fn is_valid_url(s: &str) -> bool {
     }
 }
 
+pub fn sanitize_url_candidate(raw: &str) -> Option<String> {
+    let trimmed =
+        raw.trim_matches(|c: char| c.is_whitespace() || matches!(c, '"' | '\'' | '<' | '>'));
+    let sanitized = trimmed.trim_end_matches(|c: char| {
+        matches!(c, '.' | ',' | ';' | ':' | '!' | '?' | ')' | ']' | '}')
+    });
+
+    if sanitized.is_empty() {
+        None
+    } else {
+        Some(sanitized.to_string())
+    }
+}
+
+pub fn normalize_token(raw: &str) -> Vec<String> {
+    if sanitize_url_candidate(raw)
+        .as_ref()
+        .is_some_and(|candidate| is_valid_url(candidate))
+    {
+        return Vec::new();
+    }
+
+    let canonical = canonicalize_token(raw);
+    if canonical.is_empty() {
+        return Vec::new();
+    }
+
+    let mut normalized = Vec::new();
+    push_unique(&mut normalized, canonical.clone());
+
+    if let Some(stripped) = canonical
+        .strip_suffix("'s")
+        .or_else(|| canonical.strip_suffix("’s"))
+        .filter(|value| !value.is_empty())
+    {
+        push_unique(&mut normalized, stripped.to_string());
+    }
+
+    if canonical.contains('\'') || canonical.contains('’') {
+        let compact = canonical.replace(['\'', '’'], "");
+        if compact.len() > 1 {
+            push_unique(&mut normalized, compact);
+        }
+    }
+
+    if canonical.contains('-') || canonical.contains('_') {
+        let joined = canonical.replace(['-', '_'], "");
+        if joined.len() > 1 {
+            push_unique(&mut normalized, joined);
+        }
+
+        for part in canonical.split(['-', '_']) {
+            if part.len() > 1 {
+                push_unique(&mut normalized, part.to_string());
+            }
+        }
+    }
+
+    normalized
+}
+
 pub fn create_hash(s: &str) -> u64 {
     let mut hasher = DefaultHasher::new();
     s.hash(&mut hasher);
@@ -70,5 +131,30 @@ pub fn save_url(url: &str, category: LinkCategory) {
                 }
             }
         }
+    }
+}
+
+fn canonicalize_token(raw: &str) -> String {
+    let trimmed = raw.trim_matches(|c: char| !is_token_edge_char(c));
+    if trimmed.is_empty() {
+        return String::new();
+    }
+
+    let lower = trimmed
+        .chars()
+        .flat_map(char::to_lowercase)
+        .collect::<String>();
+    lower
+        .trim_matches(|c: char| matches!(c, '-' | '_' | '\'' | '’'))
+        .to_string()
+}
+
+fn is_token_edge_char(c: char) -> bool {
+    c.is_alphanumeric() || matches!(c, '-' | '_' | '\'' | '’')
+}
+
+fn push_unique(tokens: &mut Vec<String>, token: String) {
+    if !token.is_empty() && !tokens.iter().any(|existing| existing == &token) {
+        tokens.push(token);
     }
 }
