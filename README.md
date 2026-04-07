@@ -48,16 +48,20 @@ initial lookup phase.
 
     cargo run -p app
 
-The application layer is now split into focused modules under
-`crates/app/src/`:
+Runtime file paths are now defined in one shared place:
 
-  - `config.rs`: runtime path configuration.
-  - `runner.rs`: orchestration of preload, crawl, index, and persistence.
-  - `main.rs`: thin Tokio entry point.
+  - `crates/indexer/src/config.rs`: shared defaults and env-var overrides.
+  - `crates/app/src/runner.rs`: orchestration of preload, crawl, index, and persistence.
+  - `crates/indexer/src/discovery.rs`: shared frontier/junk file handling.
 
 Runtime paths can be overridden without code changes:
 
-    PERNOX_SEED_FILE=custom-seeds.txt PERNOX_INDEX_PATH=custom-index.json cargo run -p app
+    PERNOX_SEED_FILE=custom-seeds.txt \
+    PERNOX_INDEX_PATH=custom-index.json \
+    PERNOX_VISITABLE_URLS_PATH=custom-frontier.txt \
+    PERNOX_JUNK_URLS_PATH=custom-junk.json \
+    PERNOX_CONCURRENCY=16 \
+    cargo run -p app
 
 ## LICENSE
 

@@ -4,13 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-indexer = { path = "../indexer" }
-spyder = { path = "../spyder" }
-searcher = { path = "../searcher" }
-
-
-
-serde_json = "1.0.149"
-reqwest = { version = "0.13", features = ["json"] }
-tokio = { version = "1", features = ["full"] } # for the async runtime
-serde = { version = "1.0", features = ["derive"] } # for serializing/deserializing JSON
+indexer.workspace = true
+spyder.workspace = true
+tokio.workspace = true
+futures.workspace = true

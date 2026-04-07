@@ -1,3 +1,4 @@
+use crate::config::RuntimePaths;
 use crate::storage::schema::schema::DiscoveredLink;
 use lazy_static::lazy_static;
 use std::collections::HashSet;
@@ -19,28 +20,31 @@ pub enum LinkCategory {
     Junk,
 }
 
-pub fn process_links(links: &[String]) {
+pub fn process_links(paths: &RuntimePaths, links: &[String]) {
     for link in links {
-        process_link(link);
+        process_link(paths, link);
     }
 }
 
-pub fn process_link(raw_url: &str) {
+pub fn process_link(paths: &RuntimePaths, raw_url: &str) {
     let Some(url) = canonicalize_url(raw_url) else {
         return;
     };
 
     match classify_link(&url) {
-        LinkCategory::Visitable => record_visitable(&url),
-        LinkCategory::Junk => record_junk(&url),
+        LinkCategory::Visitable => record_visitable(paths, &url),
+        LinkCategory::Junk => record_junk(paths, &url),
     }
 }
 
-pub fn load_visited_urls() {
-    let file = match File::open("visitable_urls.txt") {
+pub fn load_visited_urls(paths: &RuntimePaths) {
+    let file = match File::open(&paths.visitable_urls_path) {
         Ok(file) => file,
         Err(_) => {
-            println!("[discovery] No visitable_urls.txt found");
+            println!(
+                "[discovery] No {} found",
+                paths.visitable_urls_path.display()
+            );
             return;
         }
     };
@@ -164,7 +168,7 @@ fn parse_url(candidate: &str) -> Option<Url> {
     Url::parse(&format!("https://{}", candidate)).ok()
 }
 
-fn record_visitable(url: &str) {
+fn record_visitable(paths: &RuntimePaths, url: &str) {
     let hash = create_hash(url);
     {
         let mut visited = VISITED_URLS.lock().unwrap();
@@ -176,13 +180,13 @@ fn record_visitable(url: &str) {
     if let Ok(mut file) = OpenOptions::new()
         .create(true)
         .append(true)
-        .open("visitable_urls.txt")
+        .open(&paths.visitable_urls_path)
     {
         let _ = writeln!(file, "{}", url);
     }
 }
 
-fn record_junk(url: &str) {
+fn record_junk(paths: &RuntimePaths, url: &str) {
     let discovered_link = DiscoveredLink {
         url: url.to_string(),
         category: "junk".to_string(),
@@ -195,7 +199,7 @@ fn record_junk(url: &str) {
     if let Ok(mut file) = OpenOptions::new()
         .create(true)
         .append(true)
-        .open("junk_urls.json")
+        .open(&paths.junk_urls_path)
     {
         if let Ok(json) = serde_json::to_string(&discovered_link) {
             let _ = writeln!(file, "{}", json);

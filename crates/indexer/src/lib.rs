@@ -4,6 +4,7 @@ use std::path::PathBuf;
 pub type TF = HashMap<String, usize>;
 pub type Index = HashMap<PathBuf, TF>;
 
+pub mod config;
 pub mod discovery;
 pub mod document;
 pub mod indexing;

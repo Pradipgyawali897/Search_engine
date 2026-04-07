@@ -1,41 +1,35 @@
 # Indexer Crate
 
-The `indexer` crate is responsible for processing documents, tokenizing content, and discovering new links.
+The `indexer` crate now follows a clearer four-stage pipeline:
 
-## Key Features
+1. `parser`: fetches a source and returns a structured `ParsedDocument`.
+2. `discovery`: normalizes, classifies, deduplicates, and persists discovered links.
+3. `tokenizer`: performs pure text scanning and normalization.
+4. `indexing`: builds term-frequency maps from parsed document text.
 
-### 1. Tokenization
-- Extracts words and sequences from text.
-- Supports XML and HTML parsing.
+## Main Components
 
-### 2. Link Filtering & Discovery
-- Extracts URLs from `<a>` tags in HTML documents.
-- **Classification**: Differentiates between "visitable" (potential crawl targets) and "junk" (media, social media, tracking) links.
-- **Normalization**: Ensures consistent URL formats (removing fragments, etc.).
-- **Deduplication**: Uses a memory-efficient `u64` hash-based `HashSet` to prevent processing the same visitable URL multiple times in a session.
-- **Schema-based Storage**: Saves discovered links as structured JSON objects.
-
-## Usage
-
-Links are processed via the `tokenizer::utils::save_url` function, which handles classification, normalization, deduplication, and storage.
-
-```rust
-use indexer::tokenizer::link_filter::classify_link;
-use indexer::tokenizer::utils::save_url;
-
-let url = "https://example.com";
-let category = classify_link(url);
-save_url(url, category);
-```
+- `document::ParsedDocument`: shared parser output containing `text` and discovered `links`.
+- `parser::{HtmlParser, XmlParser}`: source-specific parsers that populate `ParsedDocument`.
+- `discovery::process_link`: centralized link handling for crawl frontier updates.
+- `indexing::index_file`: end-to-end indexing entry point for a single resource.
 
 ## Storage Format
 
-Discovered links are saved to `visitable_urls.json` or `junk_urls.json`:
+- `index.json`: persisted term-frequency index.
+- `visitable_urls.txt`: canonical visitable URLs for later crawl/index passes.
+- `junk_urls.json`: structured records for filtered links.
+
+The exact paths for those files are centralized in
+`crates/indexer/src/config.rs` and can be overridden with environment
+variables at runtime.
+
+Example junk record:
 
 ```json
 {
-  "url": "https://example.com/page",
-  "category": "visitable",
+  "url": "https://example.com/asset.js",
+  "category": "junk",
   "timestamp": 1773668325
 }
 ```
