@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0d1117" />
+    <title>Neon Content Viewer</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="backdrop backdrop-a" aria-hidden="true"></div>
+    <div class="backdrop backdrop-b" aria-hidden="true"></div>
+    <div class="backdrop backdrop-c" aria-hidden="true"></div>
+
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Postgres content browser</p>
+          <h1>Scraped content from Neon</h1>
+          <p class="lead">
+            Browse the documents already stored in PostgreSQL, inspect the latest
+            scrape, and jump between entries without reloading the page.
+          </p>
+        </div>
+
+        <div class="topbar-actions">
+          <div class="stat-chip" id="statusChip">Idle</div>
+          <button id="refreshBtn" class="primary-btn" type="button">Refresh</button>
+        </div>
+      </header>
+
+      <section class="overview-grid" aria-label="Content summary">
+        <article class="overview-card">
+          <span class="metric-label">Documents</span>
+          <strong id="metricDocs">0</strong>
+          <p id="metricDocsNote">Waiting for data</p>
+        </article>
+        <article class="overview-card">
+          <span class="metric-label">Selected</span>
+          <strong id="metricSelected">None</strong>
+          <p id="metricSelectedNote">Pick a document from the list</p>
+        </article>
+        <article class="overview-card">
+          <span class="metric-label">Last sync</span>
+          <strong id="metricSynced">--</strong>
+          <p id="metricSyncedNote">Backend response time will appear here</p>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <aside class="sidebar panel">
+          <div class="panel-head">
+            <div>
+              <h2>Documents</h2>
+              <p>Latest entries from the Postgres store.</p>
+            </div>
+            <span class="mono" id="listCount">0 items</span>
+          </div>
+
+          <label class="search-box" for="searchInput">
+            <span>Search</span>
+            <input
+              id="searchInput"
+              type="search"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="Title, URL, host, text..."
+            />
+          </label>
+
+          <div id="listState" class="state state-loading">
+            <div class="spinner" aria-hidden="true"></div>
+            <div>
+              <strong>Loading documents</strong>
+              <p>Reading the latest rows from PostgreSQL.</p>
+            </div>
+          </div>
+
+          <div id="listError" class="state state-error hidden" role="alert">
+            <div>
+              <strong>Could not load the list</strong>
+              <p id="listErrorMessage"></p>
+            </div>
+          </div>
+
+          <div id="emptyListState" class="state state-empty hidden">
+            <div>
+              <strong>No documents found</strong>
+              <p>The database query returned no scraped content yet.</p>
+            </div>
+          </div>
+
+          <div id="docList" class="doc-list hidden" role="list" aria-label="Document list"></div>
+        </aside>
+
+        <section class="detail panel" aria-live="polite">
+          <div class="panel-head detail-head">
+            <div>
+              <h2>Document detail</h2>
+              <p id="detailSubtitle">Select a document to inspect the scraped content.</p>
+            </div>
+            <span class="mono" id="detailStamp">--</span>
+          </div>
+
+          <div id="detailState" class="state state-empty">
+            <div>
+              <strong>Waiting for a document</strong>
+              <p>Choose a row from the list to show the article text and metadata.</p>
+            </div>
+          </div>
+
+          <div id="detailError" class="state state-error hidden" role="alert">
+            <div>
+              <strong>Could not load the document</strong>
+              <p id="detailErrorMessage"></p>
+            </div>
+          </div>
+
+          <article id="detailView" class="detail-view hidden">
+            <header class="article-header">
+              <div class="article-heading">
+                <p class="article-host" id="articleHost">--</p>
+                <h3 id="articleTitle">--</h3>
+                <p class="article-summary" id="articleSummary"></p>
+              </div>
+
+              <div class="article-actions">
+                <a id="articleUrl" class="secondary-link" href="#" target="_blank" rel="noreferrer">
+                  Open source
+                </a>
+              </div>
+            </header>
+
+            <div class="article-meta" id="articleMeta"></div>
+
+            <section class="article-body">
+              <div class="article-section">
+                <div class="section-label">Extracted text</div>
+                <pre id="articleText" class="article-text"></pre>
+              </div>
+
+              <div class="article-section" id="rawHtmlSection">
+                <div class="section-label">Raw HTML</div>
+                <pre id="articleHtml" class="article-text code-block"></pre>
+              </div>
+            </section>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <template id="docItemTemplate">
+      <button class="doc-item" type="button" role="listitem">
+        <div class="doc-item-main">
+          <div class="doc-item-topline">
+            <h3 class="doc-item-title"></h3>
+            <span class="doc-item-badge"></span>
+          </div>
+          <p class="doc-item-url"></p>
+          <p class="doc-item-summary"></p>
+        </div>
+        <div class="doc-item-meta">
+          <span class="doc-item-time"></span>
+          <span class="doc-item-host"></span>
+        </div>
+      </button>
+    </template>
+
+    <template id="metaChipTemplate">
+      <span class="meta-chip"></span>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

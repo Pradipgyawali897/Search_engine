@@ -10,21 +10,25 @@ impl Parser for XmlParser {
         let content = get_html_content(domain)
             .await
             .ok_or("Failed to fetch XML content")?;
-        let parser = EventReader::from_str(&content);
-        let mut text = String::new();
-
-        for e in parser {
-            match e {
-                Ok(XmlEvent::Characters(data)) => {
-                    text.push_str(&data);
-                    text.push(' ');
-                }
-                Err(e) => {
-                    return Err(Box::new(e));
-                }
-                _ => {}
-            }
-        }
-        Ok(ParsedDocument::new(text.trim().to_string()))
+        parse_xml_document(&content)
     }
+}
+
+pub fn parse_xml_document(content: &str) -> Result<ParsedDocument, Box<dyn std::error::Error>> {
+    let parser = EventReader::from_str(content);
+    let mut text = String::new();
+
+    for e in parser {
+        match e {
+            Ok(XmlEvent::Characters(data)) => {
+                text.push_str(&data);
+                text.push(' ');
+            }
+            Err(e) => {
+                return Err(Box::new(e));
+            }
+            _ => {}
+        }
+    }
+    Ok(ParsedDocument::new(text.trim().to_string()))
 }

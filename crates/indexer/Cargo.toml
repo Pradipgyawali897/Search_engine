@@ -15,4 +15,3 @@ xml.workspace = true
 
 [dev-dependencies]
 tokio.workspace = true
-tiny_http.workspace = true

@@ -12,56 +12,59 @@ impl Parser for HtmlParser {
         let content = get_html_content(domain)
             .await
             .ok_or("Failed to fetch HTML content")?;
-        let document = Html::parse_document(&content);
-        let base_url = create_base_url(domain);
-
-        let mut links = Vec::new();
-        let selector = Selector::parse("a[href]").unwrap();
-        for element in document.select(&selector) {
-            if let Some(href) = element.value().attr("href") {
-                if let Some(link) = resolve_link(base_url.as_ref(), href) {
-                    links.push(link);
-                }
-            }
-        }
-
-        let mut segments = Vec::new();
-
-        if let Some(title_selector) = Selector::parse("title").ok() {
-            for element in document.select(&title_selector) {
-                push_clean_text(&mut segments, &element.text().collect::<Vec<_>>().join(" "));
-            }
-        }
-
-        if let Some(meta_selector) =
-            Selector::parse("meta[name=\"description\"], meta[property=\"og:description\"]").ok()
-        {
-            for element in document.select(&meta_selector) {
-                if let Some(description) = element.value().attr("content") {
-                    push_clean_text(&mut segments, description);
-                }
-            }
-        }
-
-        if let Some(content_selector) =
-            Selector::parse("h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, figcaption, td, th")
-                .ok()
-        {
-            for element in document.select(&content_selector) {
-                push_clean_text(&mut segments, &element.text().collect::<Vec<_>>().join(" "));
-            }
-        }
-
-        if segments.is_empty() {
-            if let Some(body_selector) = Selector::parse("body").ok() {
-                if let Some(body) = document.select(&body_selector).next() {
-                    push_clean_text(&mut segments, &body.text().collect::<Vec<_>>().join(" "));
-                }
-            }
-        }
-
-        Ok(ParsedDocument::new(segments.join(" ")).with_links(links))
+        Ok(parse_html_document(&content, domain))
     }
+}
+
+pub fn parse_html_document(content: &str, domain: &str) -> ParsedDocument {
+    let document = Html::parse_document(content);
+    let base_url = create_base_url(domain);
+
+    let mut links = Vec::new();
+    let selector = Selector::parse("a[href]").unwrap();
+    for element in document.select(&selector) {
+        if let Some(href) = element.value().attr("href") {
+            if let Some(link) = resolve_link(base_url.as_ref(), href) {
+                links.push(link);
+            }
+        }
+    }
+
+    let mut segments = Vec::new();
+
+    if let Some(title_selector) = Selector::parse("title").ok() {
+        for element in document.select(&title_selector) {
+            push_clean_text(&mut segments, &element.text().collect::<Vec<_>>().join(" "));
+        }
+    }
+
+    if let Some(meta_selector) =
+        Selector::parse("meta[name=\"description\"], meta[property=\"og:description\"]").ok()
+    {
+        for element in document.select(&meta_selector) {
+            if let Some(description) = element.value().attr("content") {
+                push_clean_text(&mut segments, description);
+            }
+        }
+    }
+
+    if let Some(content_selector) =
+        Selector::parse("h1, h2, h3, h4, h5, h6, p, li, blockquote, pre, figcaption, td, th").ok()
+    {
+        for element in document.select(&content_selector) {
+            push_clean_text(&mut segments, &element.text().collect::<Vec<_>>().join(" "));
+        }
+    }
+
+    if segments.is_empty() {
+        if let Some(body_selector) = Selector::parse("body").ok() {
+            if let Some(body) = document.select(&body_selector).next() {
+                push_clean_text(&mut segments, &body.text().collect::<Vec<_>>().join(" "));
+            }
+        }
+    }
+
+    ParsedDocument::new(segments.join(" ")).with_links(links)
 }
 
 fn create_base_url(domain: &str) -> Option<Url> {

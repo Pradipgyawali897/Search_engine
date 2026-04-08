@@ -5,6 +5,7 @@ members = [
     "crates/searcher",
     "crates/app",
     "crates/db",
+    "crates/ab_web",
 ]
 resolver = "2"
 
@@ -23,4 +24,4 @@ tiny_http = "0.12.0"
 tokio = { version = "1.43.0", features = ["full"] }
 url = "2"
 xml = "1.0"
-sqlx = { version = "0.7", features = ["postgres", "runtime-tokio", "macros", "tls-rustls"] }
+sqlx = { version = "0.7", features = ["postgres", "sqlite", "runtime-tokio", "macros", "tls-rustls"] }

@@ -78,6 +78,33 @@ Project-specific env names are also supported:
     PERNOX_DATABASE_SCHEMA=search_engine \
     cargo run -p app
 
+## RUNNING THE SCRAPED-CONTENT DASHBOARD
+
+The workspace also includes a separate web app target under `crates/ab_web`.
+It reads scraped content from the Neon/Postgres database and serves it through
+`/api/content` with a modern dashboard.
+
+Run it with your database URL and schema:
+
+    DATABASE_URL=postgresql://user:password@host:5432/dbname \
+    DATABASE_SCHEMA=search_engine \
+    cargo run -p ab_web
+
+Useful env vars:
+
+    AB_BIND_ADDR=127.0.0.1:3001
+    DATABASE_URL=postgresql://user:password@host:5432/dbname
+    DATABASE_SCHEMA=search_engine
+    AB_CACHE_TTL_SECS=180
+    AB_REFRESH_INTERVAL_SECS=300
+
+The web app will:
+
+  - load scraped documents from PostgreSQL
+  - show the latest content in the browser
+  - cache responses in memory
+  - optionally refresh cached data in the background
+
 ## LICENSE
 
 Pernox is licensed under the MIT License. See the LICENSE file for the full
