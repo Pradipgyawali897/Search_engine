@@ -59,7 +59,9 @@ impl SearchEngineRepository {
         let mut tx = self.pool.begin().await?;
 
         let crawl_target = CrawlTarget::new(canonical_url)?;
-        let crawl_target_id = self.upsert_crawl_target_in_tx(&mut tx, &crawl_target).await?;
+        let crawl_target_id = self
+            .upsert_crawl_target_in_tx(&mut tx, &crawl_target)
+            .await?;
 
         let mut document = Document::new(canonical_url)?;
         document.crawl_target_id = Some(crawl_target_id);
@@ -75,9 +77,11 @@ impl SearchEngineRepository {
                 DbError::Validation("extracted links count exceeds i32 range".to_string())
             })?,
         )?;
-        self.upsert_document_content_in_tx(&mut tx, &content).await?;
+        self.upsert_document_content_in_tx(&mut tx, &content)
+            .await?;
 
-        let indexed_terms = self.replace_document_terms_in_tx(&mut tx, document_id, term_frequency)
+        let indexed_terms = self
+            .replace_document_terms_in_tx(&mut tx, document_id, term_frequency)
             .await?;
 
         tx.commit().await?;
@@ -102,7 +106,10 @@ impl SearchEngineRepository {
             let crawl_target_id = match discovered_link.category {
                 LinkCategory::Visitable => {
                     let crawl_target = CrawlTarget::new(discovered_link.url.clone())?;
-                    Some(self.upsert_crawl_target_in_tx(&mut tx, &crawl_target).await?)
+                    Some(
+                        self.upsert_crawl_target_in_tx(&mut tx, &crawl_target)
+                            .await?,
+                    )
                 }
                 LinkCategory::Junk => None,
             };

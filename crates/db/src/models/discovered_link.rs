@@ -34,11 +34,7 @@ pub struct DiscoveredLink {
 }
 
 impl DiscoveredLink {
-    pub fn new(
-        url: impl Into<String>,
-        category: LinkCategory,
-        timestamp: i64,
-    ) -> DbResult<Self> {
+    pub fn new(url: impl Into<String>, category: LinkCategory, timestamp: i64) -> DbResult<Self> {
         let url = url.into();
         let canonical_url = parse_canonical_url(&url)?.canonical_url;
 

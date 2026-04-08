@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+db.workspace = true
 indexer.workspace = true
 spyder.workspace = true
 tokio.workspace = true

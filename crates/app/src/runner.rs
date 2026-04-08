@@ -1,11 +1,15 @@
 use crate::config::AppConfig;
 use crate::error::AppResult;
+use db::{DiscoveredLink, SearchEngineRepository};
 use futures::stream::{self, StreamExt};
 use indexer::config::RuntimePaths;
+use indexer::discovery::{LinkCategory, canonicalize_url, classify_link};
 use indexer::load_visited_urls;
 use indexer::storage::engine as storage_engine;
-use indexer::{HtmlParser, Index, TF};
-use std::path::Path;
+use indexer::{HtmlParser, Index, IndexedDocument, TF, index_document};
+use std::collections::HashSet;
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 async fn process_seed(
     paths: RuntimePaths,
@@ -37,6 +41,40 @@ async fn process_seed(
     }
 }
 
+async fn process_seed_with_db(
+    repository: SearchEngineRepository,
+    current: usize,
+    total: usize,
+    seed: String,
+) -> Option<()> {
+    println!("\n[{}/{}] Processing: {}", current, total, seed);
+
+    match spyder::get_robot_content(&seed).await {
+        Some(_) => {
+            println!("Indexing and persisting to PostgreSQL: {}", seed);
+        }
+        None => {
+            println!("No robots.txt found or error occurred for {}", seed);
+            return None;
+        }
+    }
+
+    match index_document(&seed, HtmlParser).await {
+        Ok(indexed_document) => {
+            if let Err(error) = persist_indexed_seed(&repository, &seed, indexed_document).await {
+                eprintln!("Failed to persist {}: {}", seed, error);
+                return None;
+            }
+
+            Some(())
+        }
+        Err(error) => {
+            eprintln!("Failed to index {}: {}", seed, error);
+            None
+        }
+    }
+}
+
 pub struct SearchEngineApp {
     config: AppConfig,
 }
@@ -48,9 +86,6 @@ impl SearchEngineApp {
 
     pub async fn run(&self) -> AppResult<()> {
         println!("Pernox Kernel Execution...");
-
-        let mut tf_index = self.load_index()?;
-        load_visited_urls(&self.config.paths);
         let seeds = self.load_seeds();
 
         if seeds.is_empty() {
@@ -66,6 +101,24 @@ impl SearchEngineApp {
             seeds.len()
         );
 
+        match &self.config.database {
+            Some(database_config) => {
+                let repository = SearchEngineRepository::initialize(database_config).await?;
+                self.run_with_database(seeds, repository).await?;
+            }
+            None => {
+                self.run_with_files(seeds).await?;
+            }
+        }
+
+        println!("\nExecution completed.");
+        Ok(())
+    }
+
+    async fn run_with_files(&self, seeds: Vec<String>) -> AppResult<()> {
+        let mut tf_index = self.load_index()?;
+        load_visited_urls(&self.config.paths);
+
         let total = seeds.len();
         let concurrency = self.config.concurrency;
         let paths = self.config.paths.clone();
@@ -80,11 +133,30 @@ impl SearchEngineApp {
             .await;
 
         for result in results.into_iter().flatten() {
-            tf_index.insert(result.0.into(), result.1);
+            tf_index.insert(PathBuf::from(result.0), result.1);
         }
 
         self.save_index(&tf_index)?;
-        println!("\nExecution completed.");
+        Ok(())
+    }
+
+    async fn run_with_database(
+        &self,
+        seeds: Vec<String>,
+        repository: SearchEngineRepository,
+    ) -> AppResult<()> {
+        let total = seeds.len();
+        let concurrency = self.config.concurrency;
+
+        stream::iter(seeds.into_iter().enumerate())
+            .map(|(i, seed)| {
+                let repository = repository.clone();
+                async move { process_seed_with_db(repository, i + 1, total, seed).await }
+            })
+            .buffer_unordered(concurrency)
+            .collect::<Vec<_>>()
+            .await;
+
         Ok(())
     }
 
@@ -110,4 +182,63 @@ impl SearchEngineApp {
         path.to_str()
             .ok_or_else(|| format!("path contains non-UTF-8 characters: {}", path.display()).into())
     }
+}
+
+async fn persist_indexed_seed(
+    repository: &SearchEngineRepository,
+    seed: &str,
+    indexed_document: IndexedDocument,
+) -> AppResult<()> {
+    let stored_document = repository
+        .store_indexed_document(
+            seed,
+            &indexed_document.parsed_document.text,
+            &indexed_document.term_frequency,
+            indexed_document.parsed_document.links.len(),
+        )
+        .await?;
+
+    let discovered_links = build_discovered_links(&indexed_document.parsed_document.links);
+    repository
+        .record_discovered_links(Some(stored_document.document_id), &discovered_links)
+        .await?;
+
+    println!(
+        "Persisted document {} with {} indexed terms and {} discovered links.",
+        stored_document.document_id,
+        stored_document.indexed_terms,
+        discovered_links.len()
+    );
+
+    Ok(())
+}
+
+fn build_discovered_links(links: &[String]) -> Vec<DiscoveredLink> {
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() as i64;
+    let mut seen = HashSet::new();
+    let mut discovered_links = Vec::new();
+
+    for raw_link in links {
+        let Some(canonical_url) = canonicalize_url(raw_link) else {
+            continue;
+        };
+
+        if !seen.insert(canonical_url.clone()) {
+            continue;
+        }
+
+        let category = match classify_link(&canonical_url) {
+            LinkCategory::Visitable => LinkCategory::Visitable,
+            LinkCategory::Junk => LinkCategory::Junk,
+        };
+
+        if let Ok(discovered_link) = DiscoveredLink::new(canonical_url, category, timestamp) {
+            discovered_links.push(discovered_link);
+        }
+    }
+
+    discovered_links
 }

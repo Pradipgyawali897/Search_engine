@@ -1,3 +1,5 @@
+use crate::TF;
+
 #[derive(Debug, Clone, Default)]
 pub struct ParsedDocument {
     pub text: String,
@@ -15,5 +17,20 @@ impl ParsedDocument {
     pub fn with_links(mut self, links: Vec<String>) -> Self {
         self.links = links;
         self
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct IndexedDocument {
+    pub parsed_document: ParsedDocument,
+    pub term_frequency: TF,
+}
+
+impl IndexedDocument {
+    pub fn new(parsed_document: ParsedDocument, term_frequency: TF) -> Self {
+        Self {
+            parsed_document,
+            term_frequency,
+        }
     }
 }
