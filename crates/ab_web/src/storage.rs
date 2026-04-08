@@ -63,7 +63,10 @@ impl ContentStore {
         rows.into_iter().map(row_to_list_item).collect()
     }
 
-    pub async fn document_detail(&self, document_id: i64) -> Result<Option<ContentDetail>, AppError> {
+    pub async fn document_detail(
+        &self,
+        document_id: i64,
+    ) -> Result<Option<ContentDetail>, AppError> {
         let sql = format!(
             "SELECT \
                 d.id, \

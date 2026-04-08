@@ -1,23 +1,44 @@
 use crate::config::AppConfig;
 use crate::error::AppResult;
 use db::{DiscoveredLink, SearchEngineRepository};
-use futures::stream::{self, StreamExt};
+use futures::stream::{FuturesUnordered, StreamExt};
 use indexer::config::RuntimePaths;
-use indexer::discovery::{LinkCategory, canonicalize_url, classify_link};
+use indexer::discovery::{LinkCategory, canonicalize_url, classify_link, process_links};
 use indexer::load_visited_urls;
 use indexer::storage::engine as storage_engine;
 use indexer::{HtmlParser, Index, IndexedDocument, TF, index_document};
 use std::collections::HashSet;
+use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
+
+struct CrawlTaskResult<T> {
+    output: Option<T>,
+    discovered_links: Vec<String>,
+}
+
+impl<T> CrawlTaskResult<T> {
+    fn success(output: T, discovered_links: Vec<String>) -> Self {
+        Self {
+            output: Some(output),
+            discovered_links,
+        }
+    }
+
+    fn failed() -> Self {
+        Self {
+            output: None,
+            discovered_links: Vec::new(),
+        }
+    }
+}
 
 async fn process_seed(
     paths: RuntimePaths,
     current: usize,
-    total: usize,
     seed: String,
-) -> Option<(String, TF)> {
-    println!("\n[{}/{}] Processing: {}", current, total, seed);
+) -> CrawlTaskResult<(String, TF)> {
+    println!("\n[{}] Processing: {}", current, seed);
 
     match spyder::get_robot_content(&seed).await {
         Some(_) => {
@@ -31,14 +52,21 @@ async fn process_seed(
         }
     }
 
-    match indexer::index_file(&seed, HtmlParser, &paths).await {
-        Ok(tf) => {
-            println!("Successfully indexed! Found {} unique tokens.", tf.len());
-            Some((seed, tf))
+    match index_document(&seed, HtmlParser).await {
+        Ok(indexed_document) => {
+            let discovered_links = indexed_document.parsed_document.links;
+            let term_frequency = indexed_document.term_frequency;
+            process_links(&paths, &discovered_links);
+            println!(
+                "Successfully indexed! Found {} unique tokens and {} discovered links.",
+                term_frequency.len(),
+                discovered_links.len()
+            );
+            CrawlTaskResult::success((seed, term_frequency), discovered_links)
         }
         Err(error) => {
             eprintln!("Failed to index {}: {}", seed, error);
-            None
+            CrawlTaskResult::failed()
         }
     }
 }
@@ -46,10 +74,9 @@ async fn process_seed(
 async fn process_seed_with_db(
     repository: SearchEngineRepository,
     current: usize,
-    total: usize,
     seed: String,
-) -> Option<()> {
-    println!("\n[{}/{}] Processing: {}", current, total, seed);
+) -> CrawlTaskResult<()> {
+    println!("\n[{}] Processing: {}", current, seed);
 
     match spyder::get_robot_content(&seed).await {
         Some(_) => {
@@ -65,16 +92,18 @@ async fn process_seed_with_db(
 
     match index_document(&seed, HtmlParser).await {
         Ok(indexed_document) => {
-            if let Err(error) = persist_indexed_seed(&repository, &seed, indexed_document).await {
+            let discovered_links = indexed_document.parsed_document.links.clone();
+
+            if let Err(error) = persist_indexed_seed(&repository, &seed, &indexed_document).await {
                 eprintln!("Failed to persist {}: {}", seed, error);
-                return None;
+                return CrawlTaskResult::failed();
             }
 
-            Some(())
+            CrawlTaskResult::success((), discovered_links)
         }
         Err(error) => {
             eprintln!("Failed to index {}: {}", seed, error);
-            None
+            CrawlTaskResult::failed()
         }
     }
 }
@@ -110,7 +139,7 @@ impl SearchEngineApp {
         }
 
         println!(
-            "Found {} seeds. Starting scrape from the seed file.",
+            "Found {} seeds. Starting crawl from the seed frontier.",
             seeds.len()
         );
 
@@ -136,23 +165,20 @@ impl SearchEngineApp {
     async fn run_with_files(&self, seeds: Vec<String>) -> AppResult<()> {
         let mut tf_index = self.load_index()?;
         load_visited_urls(&self.config.paths);
-
-        let total = seeds.len();
-        let concurrency = self.config.concurrency;
         let paths = self.config.paths.clone();
 
-        let results = stream::iter(seeds.into_iter().enumerate())
-            .map(|(i, seed)| {
+        self.crawl_frontier(
+            seeds,
+            move |current, seed| {
                 let paths = paths.clone();
-                async move { process_seed(paths, i + 1, total, seed).await }
-            })
-            .buffer_unordered(concurrency)
-            .collect::<Vec<_>>()
-            .await;
-
-        for result in results.into_iter().flatten() {
-            tf_index.insert(PathBuf::from(result.0), result.1);
-        }
+                async move { process_seed(paths, current, seed).await }
+            },
+            |(url, term_frequency)| {
+                tf_index.insert(PathBuf::from(url), term_frequency);
+                Ok(())
+            },
+        )
+        .await?;
 
         self.save_index(&tf_index)?;
         Ok(())
@@ -163,18 +189,92 @@ impl SearchEngineApp {
         seeds: Vec<String>,
         repository: SearchEngineRepository,
     ) -> AppResult<()> {
-        let total = seeds.len();
-        let concurrency = self.config.concurrency;
-
-        stream::iter(seeds.into_iter().enumerate())
-            .map(|(i, seed)| {
+        self.crawl_frontier(
+            seeds,
+            move |current, seed| {
                 let repository = repository.clone();
-                async move { process_seed_with_db(repository, i + 1, total, seed).await }
-            })
-            .buffer_unordered(concurrency)
-            .collect::<Vec<_>>()
-            .await;
+                async move { process_seed_with_db(repository, current, seed).await }
+            },
+            |_| Ok(()),
+        )
+        .await?;
 
+        Ok(())
+    }
+
+    async fn crawl_frontier<T, F, Fut, H>(
+        &self,
+        seeds: Vec<String>,
+        mut process: F,
+        mut handle_output: H,
+    ) -> AppResult<()>
+    where
+        F: FnMut(usize, String) -> Fut,
+        Fut: Future<Output = CrawlTaskResult<T>>,
+        H: FnMut(T) -> AppResult<()>,
+    {
+        let mut frontier = spyder::create_seed(seeds);
+        let mut in_flight = FuturesUnordered::new();
+        let mut scheduled = 0usize;
+        let mut completed = 0usize;
+        let concurrency = self.config.concurrency.max(1);
+        let crawl_limit = self.config.max_crawl_urls.unwrap_or(usize::MAX);
+        let unlimited = self.config.max_crawl_urls.is_none();
+
+        if unlimited {
+            println!("Crawl limit disabled. The fetch will continue until the frontier is empty.");
+        } else {
+            println!("Crawl limit set to {} URLs.", crawl_limit);
+        }
+
+        loop {
+            while in_flight.len() < concurrency && scheduled < crawl_limit {
+                let Some(next_url) = frontier.next_url() else {
+                    break;
+                };
+
+                scheduled += 1;
+                in_flight.push(process(scheduled, next_url.to_string()));
+            }
+
+            if in_flight.is_empty() {
+                break;
+            }
+
+            let result = in_flight
+                .next()
+                .await
+                .expect("crawl queue should contain in-flight work");
+            completed += 1;
+
+            let newly_queued = enqueue_discovered_links(&mut frontier, &result.discovered_links);
+            if !result.discovered_links.is_empty() {
+                println!(
+                    "[{}] Queued {} new visitable URLs from {} discovered links. Frontier size: {}",
+                    completed,
+                    newly_queued,
+                    result.discovered_links.len(),
+                    frontier.len()
+                );
+            }
+
+            if let Some(value) = result.output {
+                handle_output(value)?;
+            }
+        }
+
+        if !unlimited && scheduled >= crawl_limit && (!frontier.is_empty() || !in_flight.is_empty())
+        {
+            println!(
+                "Reached crawl limit of {} URLs. Increase PERNOX_MAX_CRAWL_URLS or set it to 0 for an unbounded crawl.",
+                crawl_limit
+            );
+        }
+
+        println!(
+            "Crawl finished after scheduling {} URLs and completing {} fetches.",
+            scheduled, completed
+        );
         Ok(())
     }
 
@@ -206,10 +306,26 @@ impl SearchEngineApp {
     }
 }
 
+fn enqueue_discovered_links(frontier: &mut spyder::Frontier, links: &[String]) -> usize {
+    links.iter().fold(0usize, |queued, raw_link| {
+        let Some(canonical_url) = canonicalize_url(raw_link) else {
+            return queued;
+        };
+
+        if matches!(classify_link(&canonical_url), LinkCategory::Visitable)
+            && frontier.add_url(&canonical_url)
+        {
+            queued + 1
+        } else {
+            queued
+        }
+    })
+}
+
 async fn persist_indexed_seed(
     repository: &SearchEngineRepository,
     seed: &str,
-    indexed_document: IndexedDocument,
+    indexed_document: &IndexedDocument,
 ) -> AppResult<()> {
     let stored_document = repository
         .store_indexed_document(
@@ -298,7 +414,8 @@ fn alternate_seed_paths(configured_path: &Path) -> Vec<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use super::resolve_seed_path;
+    use super::{enqueue_discovered_links, resolve_seed_path};
+    use spyder::create_seed;
     use std::fs;
     use std::path::PathBuf;
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -328,6 +445,22 @@ mod tests {
         assert_eq!(resolve_seed_path(&configured), configured);
 
         fs::remove_dir_all(temp_dir).unwrap();
+    }
+
+    #[test]
+    fn enqueue_discovered_links_adds_only_new_visitable_urls() {
+        let mut frontier = create_seed(vec!["https://example.com".to_string()]);
+        let discovered_links = vec![
+            "https://example.com/about".to_string(),
+            "https://example.com/about#team".to_string(),
+            "https://cdn.example.com/app.js".to_string(),
+        ];
+
+        assert_eq!(
+            enqueue_discovered_links(&mut frontier, &discovered_links),
+            1
+        );
+        assert_eq!(frontier.len(), 2);
     }
 
     fn unique_temp_dir() -> PathBuf {

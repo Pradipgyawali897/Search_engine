@@ -33,12 +33,14 @@ impl AbWebConfig {
 }
 
 fn required_env_any(keys: &[&str]) -> Result<String, AppError> {
-    keys.iter().find_map(|key| optional_env(key)).ok_or_else(|| {
-        AppError::config(format!(
-            "missing required environment variable; set one of {}",
-            keys.join(", ")
-        ))
-    })
+    keys.iter()
+        .find_map(|key| optional_env(key))
+        .ok_or_else(|| {
+            AppError::config(format!(
+                "missing required environment variable; set one of {}",
+                keys.join(", ")
+            ))
+        })
 }
 
 fn optional_env(key: &str) -> Option<String> {
@@ -80,9 +82,8 @@ fn parse_socket_addr(raw: String) -> Result<SocketAddr, AppError> {
 fn normalize_env_value(value: String) -> String {
     let trimmed = value.trim();
     if trimmed.len() >= 2 {
-        let quoted =
-            (trimmed.starts_with('"') && trimmed.ends_with('"'))
-                || (trimmed.starts_with('\'') && trimmed.ends_with('\''));
+        let quoted = (trimmed.starts_with('"') && trimmed.ends_with('"'))
+            || (trimmed.starts_with('\'') && trimmed.ends_with('\''));
         if quoted {
             return trimmed[1..trimmed.len() - 1].trim().to_string();
         }

@@ -19,12 +19,14 @@ fn load_app_config_reads_database_environment() {
         std::env::set_var("PERNOX_DATABASE_SCHEMA", "pernox_test");
         std::env::set_var("PERNOX_DATABASE_MAX_CONNECTIONS", "17");
         std::env::set_var("PERNOX_CONCURRENCY", "4");
+        std::env::set_var("PERNOX_MAX_CRAWL_URLS", "250");
     }
 
     let config = load_app_config();
     let database = config.database.expect("database config should be present");
 
     assert_eq!(config.concurrency, 4);
+    assert_eq!(config.max_crawl_urls, Some(250));
     assert_eq!(database.database_url, "postgres://localhost/pernox");
     assert_eq!(database.schema, "pernox_test");
     assert_eq!(database.max_connections, 17);
@@ -91,6 +93,21 @@ fn load_environment_reads_seed_file_from_dotenv() {
     clear_env();
 }
 
+#[test]
+fn load_app_config_treats_zero_crawl_limit_as_unbounded() {
+    let _guard = env_lock().lock().unwrap();
+    clear_env();
+
+    unsafe {
+        std::env::set_var("PERNOX_MAX_CRAWL_URLS", "0");
+    }
+
+    let config = load_app_config();
+    assert_eq!(config.max_crawl_urls, None);
+
+    clear_env();
+}
+
 fn clear_env() {
     for key in [
         "DATABASE_URL",
@@ -104,6 +121,7 @@ fn clear_env() {
         "PERNOX_DATABASE_MIN_CONNECTIONS",
         "PERNOX_DATABASE_ACQUIRE_TIMEOUT_SECS",
         "PERNOX_CONCURRENCY",
+        "PERNOX_MAX_CRAWL_URLS",
         "PERNOX_SEED_FILE",
         "PERNOX_APP_BASE_DIR",
     ] {

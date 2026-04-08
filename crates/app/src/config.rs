@@ -11,6 +11,7 @@ use std::time::Duration;
 pub struct AppConfig {
     pub paths: RuntimePaths,
     pub concurrency: usize,
+    pub max_crawl_urls: Option<usize>,
     pub database: Option<PostgresConfig>,
 }
 
@@ -27,6 +28,7 @@ pub fn load_app_config() -> AppConfig {
             .and_then(|v| v.parse().ok())
             .filter(|&n| n > 0)
             .unwrap_or(8),
+        max_crawl_urls: crawl_limit_from_env("PERNOX_MAX_CRAWL_URLS", 10_000),
         database: load_database_config(),
     }
 }
@@ -113,5 +115,25 @@ fn resolve_runtime_path(path: PathBuf) -> PathBuf {
     match env::var("PERNOX_APP_BASE_DIR") {
         Ok(base_dir) if !base_dir.trim().is_empty() => PathBuf::from(base_dir.trim()).join(path),
         _ => path,
+    }
+}
+
+fn crawl_limit_from_env(key: &str, default: usize) -> Option<usize> {
+    match env::var(key) {
+        Ok(value) => {
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                Some(default)
+            } else if trimmed == "0" {
+                None
+            } else {
+                trimmed
+                    .parse::<usize>()
+                    .ok()
+                    .filter(|value| *value > 0)
+                    .or(Some(default))
+            }
+        }
+        Err(_) => Some(default),
     }
 }

@@ -9,8 +9,14 @@ fn content_list_envelope_serializes_expected_shape() {
 
     assert_eq!(json["meta"]["state"], "fresh");
     assert_eq!(json["meta"]["limit"], 20);
-    assert_eq!(json["items"][0]["canonical_url"], "https://example.com/article");
-    assert_eq!(json["items"][0]["summary"], "A concise preview of the stored article body.");
+    assert_eq!(
+        json["items"][0]["canonical_url"],
+        "https://example.com/article"
+    );
+    assert_eq!(
+        json["items"][0]["summary"],
+        "A concise preview of the stored article body."
+    );
 }
 
 #[test]
@@ -20,7 +26,10 @@ fn content_detail_envelope_serializes_expected_shape() {
 
     assert_eq!(json["meta"]["document_id"], 42);
     assert_eq!(json["content"]["title"], "Article title");
-    assert_eq!(json["content"]["plain_text"], "Full article body with more text for reading.");
+    assert_eq!(
+        json["content"]["plain_text"],
+        "Full article body with more text for reading."
+    );
 }
 
 #[test]

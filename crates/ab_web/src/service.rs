@@ -62,8 +62,12 @@ impl AppService {
         Ok(ContentDetailEnvelope::fresh(content))
     }
 
-    async fn refresh_content_with_limit(&self, limit: u32) -> Result<ContentListEnvelope, AppError> {
-        let collection = ContentListEnvelope::fresh(self.store.latest_documents(limit).await?, limit);
+    async fn refresh_content_with_limit(
+        &self,
+        limit: u32,
+    ) -> Result<ContentListEnvelope, AppError> {
+        let collection =
+            ContentListEnvelope::fresh(self.store.latest_documents(limit).await?, limit);
         self.cache.set(collection.clone()).await;
         Ok(collection)
     }

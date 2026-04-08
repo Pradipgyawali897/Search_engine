@@ -22,3 +22,18 @@ fn test_frontier_deduplication() {
     let urls: Vec<&Url> = manager.iter().collect();
     assert_eq!(urls.len(), 1);
 }
+
+#[test]
+fn test_frontier_accepts_bare_hostname_seeds() {
+    let manager = Frontier::new(vec!["example.com"]);
+    let urls: Vec<&Url> = manager.iter().collect();
+    assert_eq!(urls.len(), 1);
+    assert_eq!(urls[0].as_str(), "https://example.com/");
+}
+
+#[test]
+fn test_frontier_normalizes_duplicate_urls() {
+    let mut manager = Frontier::new(vec!["https://example.com"]);
+    assert!(!manager.add_url("https://EXAMPLE.com:443#section"));
+    assert_eq!(manager.len(), 1);
+}
