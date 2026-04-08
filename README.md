@@ -63,6 +63,21 @@ Runtime paths can be overridden without code changes:
     PERNOX_CONCURRENCY=16 \
     cargo run -p app
 
+To scrape directly into PostgreSQL, set a database connection URL. The app will
+automatically switch from file mode to DB-backed scrape mode and initialize the
+schema before indexing:
+
+    DATABASE_URL=postgres://user:password@localhost:5432/pernox \
+    DATABASE_SCHEMA=search_engine \
+    PERNOX_SEED_FILE=seeds.txt \
+    cargo run -p app
+
+Project-specific env names are also supported:
+
+    PERNOX_DATABASE_URL=postgres://user:password@localhost:5432/pernox \
+    PERNOX_DATABASE_SCHEMA=search_engine \
+    cargo run -p app
+
 ## LICENSE
 
 Pernox is licensed under the MIT License. See the LICENSE file for the full

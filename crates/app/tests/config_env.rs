@@ -42,8 +42,33 @@ fn load_database_config_ignores_empty_url() {
     clear_env();
 }
 
+#[test]
+fn load_database_config_accepts_standard_database_url_env() {
+    let _guard = env_lock().lock().unwrap();
+    clear_env();
+
+    unsafe {
+        std::env::set_var("DATABASE_URL", "postgres://localhost/pernox_main");
+        std::env::set_var("DATABASE_SCHEMA", "public_search");
+        std::env::set_var("DATABASE_MAX_CONNECTIONS", "9");
+    }
+
+    let database = load_database_config().expect("database config should be present");
+
+    assert_eq!(database.database_url, "postgres://localhost/pernox_main");
+    assert_eq!(database.schema, "public_search");
+    assert_eq!(database.max_connections, 9);
+
+    clear_env();
+}
+
 fn clear_env() {
     for key in [
+        "DATABASE_URL",
+        "DATABASE_SCHEMA",
+        "DATABASE_MAX_CONNECTIONS",
+        "DATABASE_MIN_CONNECTIONS",
+        "DATABASE_ACQUIRE_TIMEOUT_SECS",
         "PERNOX_DATABASE_URL",
         "PERNOX_DATABASE_SCHEMA",
         "PERNOX_DATABASE_MAX_CONNECTIONS",

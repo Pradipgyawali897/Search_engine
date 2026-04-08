@@ -103,10 +103,15 @@ impl SearchEngineApp {
 
         match &self.config.database {
             Some(database_config) => {
+                println!(
+                    "PostgreSQL scrape mode enabled. Using schema '{}'.",
+                    database_config.schema
+                );
                 let repository = SearchEngineRepository::initialize(database_config).await?;
                 self.run_with_database(seeds, repository).await?;
             }
             None => {
+                println!("File scrape mode enabled. Set DATABASE_URL to persist into PostgreSQL.");
                 self.run_with_files(seeds).await?;
             }
         }
