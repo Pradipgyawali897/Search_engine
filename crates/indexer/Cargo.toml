@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+db.workspace = true
 lazy_static.workspace = true
-rand.workspace = true
 scraper.workspace = true
 serde.workspace = true
 serde_json.workspace = true

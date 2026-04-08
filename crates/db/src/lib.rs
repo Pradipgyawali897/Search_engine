@@ -1,14 +1,6 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+pub mod error;
+pub mod postgres;
+pub mod schema;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use error::{DbError, DbResult};
+pub use postgres::{PostgresConfig, apply_schema, connect, connect_and_initialize};

@@ -1,5 +1,5 @@
 use crate::config::RuntimePaths;
-use crate::storage::schema::schema::DiscoveredLink;
+use db::schema::DiscoveredLink;
 use lazy_static::lazy_static;
 use std::collections::HashSet;
 use std::collections::hash_map::DefaultHasher;
@@ -10,14 +10,10 @@ use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use url::Url;
 
+pub use db::schema::LinkCategory;
+
 lazy_static! {
     static ref VISITED_URLS: Mutex<HashSet<u64>> = Mutex::new(HashSet::new());
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LinkCategory {
-    Visitable,
-    Junk,
 }
 
 pub fn process_links(paths: &RuntimePaths, links: &[String]) {
@@ -187,13 +183,13 @@ fn record_visitable(paths: &RuntimePaths, url: &str) {
 }
 
 fn record_junk(paths: &RuntimePaths, url: &str) {
-    let discovered_link = DiscoveredLink {
-        url: url.to_string(),
-        category: "junk".to_string(),
-        timestamp: SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs(),
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() as i64;
+    let Ok(discovered_link) = DiscoveredLink::new(url.to_string(), LinkCategory::Junk, timestamp)
+    else {
+        return;
     };
 
     if let Ok(mut file) = OpenOptions::new()

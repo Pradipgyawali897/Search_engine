@@ -9,6 +9,7 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
+db = { path = "crates/db" }
 indexer = { path = "crates/indexer" }
 searcher = { path = "crates/searcher" }
 spyder = { path = "crates/spyder" }
