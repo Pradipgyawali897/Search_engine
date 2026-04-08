@@ -4,7 +4,12 @@ use std::fs;
 pub fn consume_seeds_from_file(path: &str) -> Vec<String> {
     let content = fs::read_to_string(path).unwrap_or_else(|_err| String::new());
 
-    content.lines().map(|line| line.to_string()).collect()
+    content
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .map(ToOwned::to_owned)
+        .collect()
 }
 
 pub fn create_seed(seeds: Vec<String>) -> Frontier {

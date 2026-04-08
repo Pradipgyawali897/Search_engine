@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 db.workspace = true
+dotenvy = "0.15.7"
 indexer.workspace = true
 spyder.workspace = true
 tokio.workspace = true

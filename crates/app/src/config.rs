@@ -68,7 +68,10 @@ pub fn load_database_config() -> Option<PostgresConfig> {
 }
 
 fn path_from_env(key: &str, default: &str) -> PathBuf {
-    env::var_os(key)
+    env::var(key)
+        .ok()
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from(default))
 }

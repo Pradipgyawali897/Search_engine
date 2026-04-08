@@ -86,12 +86,20 @@ impl SearchEngineApp {
 
     pub async fn run(&self) -> AppResult<()> {
         println!("Pernox Kernel Execution...");
-        let seeds = self.load_seeds();
+        let seed_path = self.resolve_seed_path();
+        if seed_path != self.config.paths.seed_path {
+            println!(
+                "Configured seed file {} was not found. Using {} instead.",
+                self.config.paths.seed_path.display(),
+                seed_path.display()
+            );
+        }
+        let seeds = self.load_seeds(&seed_path);
 
         if seeds.is_empty() {
             println!(
                 "No seeds found in {}. Please add some URLs to it.",
-                self.config.paths.seed_path.display()
+                seed_path.display()
             );
             return Ok(());
         }
@@ -170,8 +178,8 @@ impl SearchEngineApp {
             .map_err(Into::into)
     }
 
-    fn load_seeds(&self) -> Vec<String> {
-        spyder::consume_seeds_from_file(&self.config.paths.seed_path.to_string_lossy())
+    fn load_seeds(&self, seed_path: &Path) -> Vec<String> {
+        spyder::consume_seeds_from_file(&seed_path.to_string_lossy())
     }
 
     fn save_index(&self, tf_index: &Index) -> AppResult<()> {
@@ -186,6 +194,10 @@ impl SearchEngineApp {
     fn path_as_str<'a>(&self, path: &'a Path) -> AppResult<&'a str> {
         path.to_str()
             .ok_or_else(|| format!("path contains non-UTF-8 characters: {}", path.display()).into())
+    }
+
+    fn resolve_seed_path(&self) -> PathBuf {
+        resolve_seed_path(&self.config.paths.seed_path)
     }
 }
 
@@ -246,4 +258,78 @@ fn build_discovered_links(links: &[String]) -> Vec<DiscoveredLink> {
     }
 
     discovered_links
+}
+
+fn resolve_seed_path(configured_path: &Path) -> PathBuf {
+    if configured_path.is_file() {
+        return configured_path.to_path_buf();
+    }
+
+    for candidate in alternate_seed_paths(configured_path) {
+        if candidate.is_file() {
+            return candidate;
+        }
+    }
+
+    configured_path.to_path_buf()
+}
+
+fn alternate_seed_paths(configured_path: &Path) -> Vec<PathBuf> {
+    let Some(file_name) = configured_path.file_name().and_then(|name| name.to_str()) else {
+        return Vec::new();
+    };
+
+    let aliases: &[&str] = match file_name {
+        "seeds.txt" => &["seed.txt"],
+        "seed.txt" => &["seeds.txt"],
+        _ => &[],
+    };
+
+    aliases
+        .iter()
+        .map(|alias| configured_path.with_file_name(alias))
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::resolve_seed_path;
+    use std::fs;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn resolve_seed_path_falls_back_to_seed_txt() {
+        let temp_dir = unique_temp_dir();
+        fs::create_dir_all(&temp_dir).unwrap();
+
+        let configured = temp_dir.join("seeds.txt");
+        let fallback = temp_dir.join("seed.txt");
+        fs::write(&fallback, "https://example.com\n").unwrap();
+
+        assert_eq!(resolve_seed_path(&configured), fallback);
+
+        fs::remove_dir_all(temp_dir).unwrap();
+    }
+
+    #[test]
+    fn resolve_seed_path_keeps_existing_configured_file() {
+        let temp_dir = unique_temp_dir();
+        fs::create_dir_all(&temp_dir).unwrap();
+
+        let configured = temp_dir.join("seeds.txt");
+        fs::write(&configured, "https://example.com\n").unwrap();
+
+        assert_eq!(resolve_seed_path(&configured), configured);
+
+        fs::remove_dir_all(temp_dir).unwrap();
+    }
+
+    fn unique_temp_dir() -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        std::env::temp_dir().join(format!("pernox-app-tests-{}-{nanos}", std::process::id()))
+    }
 }

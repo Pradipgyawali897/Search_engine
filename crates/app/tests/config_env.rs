@@ -1,5 +1,8 @@
 use app::config::{load_app_config, load_database_config};
+use app::load_environment;
+use std::path::PathBuf;
 use std::sync::{Mutex, OnceLock};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 fn env_lock() -> &'static Mutex<()> {
     static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
@@ -62,6 +65,32 @@ fn load_database_config_accepts_standard_database_url_env() {
     clear_env();
 }
 
+#[test]
+fn load_environment_reads_seed_file_from_dotenv() {
+    let _guard = env_lock().lock().unwrap();
+    clear_env();
+
+    let original_dir = std::env::current_dir().unwrap();
+    let temp_dir = unique_temp_dir();
+    std::fs::create_dir_all(&temp_dir).unwrap();
+    std::fs::write(
+        temp_dir.join(".env"),
+        "PERNOX_SEED_FILE=seed.txt \nPERNOX_CONCURRENCY=5\n",
+    )
+    .unwrap();
+
+    std::env::set_current_dir(&temp_dir).unwrap();
+    load_environment();
+
+    let config = load_app_config();
+    assert_eq!(config.paths.seed_path, PathBuf::from("seed.txt"));
+    assert_eq!(config.concurrency, 5);
+
+    std::env::set_current_dir(original_dir).unwrap();
+    std::fs::remove_dir_all(temp_dir).unwrap();
+    clear_env();
+}
+
 fn clear_env() {
     for key in [
         "DATABASE_URL",
@@ -75,9 +104,21 @@ fn clear_env() {
         "PERNOX_DATABASE_MIN_CONNECTIONS",
         "PERNOX_DATABASE_ACQUIRE_TIMEOUT_SECS",
         "PERNOX_CONCURRENCY",
+        "PERNOX_SEED_FILE",
     ] {
         unsafe {
             std::env::remove_var(key);
         }
     }
+}
+
+fn unique_temp_dir() -> PathBuf {
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    std::env::temp_dir().join(format!(
+        "pernox-dotenv-tests-{}-{nanos}",
+        std::process::id()
+    ))
 }
