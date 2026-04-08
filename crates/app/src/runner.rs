@@ -24,8 +24,10 @@ async fn process_seed(
             println!("Indexing and discovering links: {}", seed);
         }
         None => {
-            println!("No robots.txt found or error occurred for {}", seed);
-            return None;
+            println!(
+                "No robots.txt found or it could not be fetched for {}. Proceeding from the seed URL.",
+                seed
+            );
         }
     }
 
@@ -54,8 +56,10 @@ async fn process_seed_with_db(
             println!("Indexing and persisting to PostgreSQL: {}", seed);
         }
         None => {
-            println!("No robots.txt found or error occurred for {}", seed);
-            return None;
+            println!(
+                "No robots.txt found or it could not be fetched for {}. Proceeding from the seed URL.",
+                seed
+            );
         }
     }
 
@@ -87,6 +91,7 @@ impl SearchEngineApp {
     pub async fn run(&self) -> AppResult<()> {
         println!("Pernox Kernel Execution...");
         let seed_path = self.resolve_seed_path();
+        println!("Loading seeds from {}...", seed_path.display());
         if seed_path != self.config.paths.seed_path {
             println!(
                 "Configured seed file {} was not found. Using {} instead.",
@@ -105,7 +110,7 @@ impl SearchEngineApp {
         }
 
         println!(
-            "Found {} seeds. Fetching robots.txt for each...",
+            "Found {} seeds. Starting scrape from the seed file.",
             seeds.len()
         );
 

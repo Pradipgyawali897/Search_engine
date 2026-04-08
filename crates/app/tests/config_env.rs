@@ -83,7 +83,7 @@ fn load_environment_reads_seed_file_from_dotenv() {
     load_environment();
 
     let config = load_app_config();
-    assert_eq!(config.paths.seed_path, PathBuf::from("seed.txt"));
+    assert_eq!(config.paths.seed_path, temp_dir.join("seed.txt"));
     assert_eq!(config.concurrency, 5);
 
     std::env::set_current_dir(original_dir).unwrap();
@@ -105,6 +105,7 @@ fn clear_env() {
         "PERNOX_DATABASE_ACQUIRE_TIMEOUT_SECS",
         "PERNOX_CONCURRENCY",
         "PERNOX_SEED_FILE",
+        "PERNOX_APP_BASE_DIR",
     ] {
         unsafe {
             std::env::remove_var(key);

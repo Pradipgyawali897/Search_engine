@@ -68,12 +68,14 @@ pub fn load_database_config() -> Option<PostgresConfig> {
 }
 
 fn path_from_env(key: &str, default: &str) -> PathBuf {
-    env::var(key)
+    let path = env::var(key)
         .ok()
         .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty())
         .map(PathBuf::from)
-        .unwrap_or_else(|| PathBuf::from(default))
+        .unwrap_or_else(|| PathBuf::from(default));
+
+    resolve_runtime_path(path)
 }
 
 fn non_empty_env(key: &str) -> Option<String> {
@@ -101,4 +103,15 @@ fn positive_env_u64(key: &str) -> Option<u64> {
 
 fn first_positive_env_u64(keys: &[&str]) -> Option<u64> {
     keys.iter().find_map(|key| positive_env_u64(key))
+}
+
+fn resolve_runtime_path(path: PathBuf) -> PathBuf {
+    if path.is_absolute() {
+        return path;
+    }
+
+    match env::var("PERNOX_APP_BASE_DIR") {
+        Ok(base_dir) if !base_dir.trim().is_empty() => PathBuf::from(base_dir.trim()).join(path),
+        _ => path,
+    }
 }

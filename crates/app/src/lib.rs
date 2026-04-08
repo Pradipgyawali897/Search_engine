@@ -7,7 +7,13 @@ use crate::error::AppResult;
 use crate::runner::SearchEngineApp;
 
 pub fn load_environment() {
-    let _ = dotenvy::dotenv();
+    if let Ok(path) = dotenvy::dotenv() {
+        if let Some(parent) = path.parent() {
+            unsafe {
+                std::env::set_var("PERNOX_APP_BASE_DIR", parent);
+            }
+        }
+    }
 }
 
 pub async fn run() -> AppResult<()> {
