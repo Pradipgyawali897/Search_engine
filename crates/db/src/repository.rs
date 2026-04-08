@@ -147,7 +147,7 @@ impl SearchEngineRepository {
             .bind(target.depth)
             .bind(target.priority)
             .bind(target.retry_count)
-            .fetch_one(&mut *tx)
+            .fetch_one(&mut **tx)
             .await?;
 
         Ok(target_id)
@@ -173,7 +173,7 @@ impl SearchEngineRepository {
             .bind(document.content_length)
             .bind(&document.checksum)
             .bind(&document.language)
-            .fetch_one(&mut *tx)
+            .fetch_one(&mut **tx)
             .await?;
 
         Ok(document_id)
@@ -191,7 +191,7 @@ impl SearchEngineRepository {
             .bind(&content.raw_html)
             .bind(&content.plain_text)
             .bind(content.extracted_links_count)
-            .execute(&mut *tx)
+            .execute(&mut **tx)
             .await?;
 
         Ok(())
@@ -209,7 +209,7 @@ impl SearchEngineRepository {
 
         sqlx::query(&delete_sql)
             .bind(document_id)
-            .execute(&mut *tx)
+            .execute(&mut **tx)
             .await?;
 
         let mut indexed_terms = 0usize;
@@ -218,7 +218,7 @@ impl SearchEngineRepository {
             let term = Term::new(term_value.clone())?;
             let term_id = sqlx::query_scalar::<_, i64>(&upsert_term_sql)
                 .bind(&term.term)
-                .fetch_one(&mut *tx)
+                .fetch_one(&mut **tx)
                 .await?;
             let document_term = DocumentTerm::new(
                 document_id,
@@ -232,7 +232,7 @@ impl SearchEngineRepository {
                 .bind(document_term.document_id)
                 .bind(document_term.term_id)
                 .bind(document_term.term_frequency)
-                .execute(&mut *tx)
+                .execute(&mut **tx)
                 .await?;
 
             indexed_terms += 1;
