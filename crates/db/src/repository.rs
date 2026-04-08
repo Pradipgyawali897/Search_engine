@@ -8,6 +8,7 @@ use crate::queries::{contents, crawl_targets, documents, links, terms};
 use crate::schema::validate_schema_name;
 use sqlx::{PgPool, Postgres, Transaction};
 use std::collections::HashMap;
+use std::time::Duration;
 
 #[derive(Debug, Clone)]
 pub struct SearchEngineRepository {
@@ -21,6 +22,8 @@ pub struct StoredDocument {
     pub document_id: i64,
     pub indexed_terms: usize,
 }
+
+const MAX_TRANSIENT_RETRIES: usize = 3;
 
 impl SearchEngineRepository {
     pub fn new(pool: PgPool, schema: impl Into<String>) -> DbResult<Self> {
@@ -43,10 +46,39 @@ impl SearchEngineRepository {
     }
 
     pub async fn upsert_crawl_target(&self, target: &CrawlTarget) -> DbResult<i64> {
-        let mut tx = self.pool.begin().await?;
-        let target_id = self.upsert_crawl_target_in_tx(&mut tx, target).await?;
-        tx.commit().await?;
-        Ok(target_id)
+        for attempt in 0..MAX_TRANSIENT_RETRIES {
+            let mut tx = self.pool.begin().await?;
+
+            match self.upsert_crawl_target_in_tx(&mut tx, target).await {
+                Ok(target_id) => match tx.commit().await {
+                    Ok(()) => return Ok(target_id),
+                    Err(error) => {
+                        if attempt + 1 < MAX_TRANSIENT_RETRIES && is_retryable_sqlx_error(&error) {
+                            sleep_before_retry(attempt).await;
+                            continue;
+                        }
+
+                        return Err(error.into());
+                    }
+                },
+                Err(error) => {
+                    let should_retry =
+                        attempt + 1 < MAX_TRANSIENT_RETRIES && is_retryable_db_error(&error);
+                    let _ = tx.rollback().await;
+
+                    if should_retry {
+                        sleep_before_retry(attempt).await;
+                        continue;
+                    }
+
+                    return Err(error);
+                }
+            }
+        }
+
+        Err(DbError::Validation(
+            "exhausted transient retries while upserting crawl target".to_string(),
+        ))
     }
 
     pub async fn store_indexed_document(
@@ -56,12 +88,125 @@ impl SearchEngineRepository {
         term_frequency: &HashMap<String, usize>,
         extracted_links_count: usize,
     ) -> DbResult<StoredDocument> {
-        let mut tx = self.pool.begin().await?;
+        for attempt in 0..MAX_TRANSIENT_RETRIES {
+            let mut tx = self.pool.begin().await?;
 
+            match self
+                .store_indexed_document_in_tx(
+                    &mut tx,
+                    canonical_url,
+                    plain_text,
+                    term_frequency,
+                    extracted_links_count,
+                )
+                .await
+            {
+                Ok(stored_document) => match tx.commit().await {
+                    Ok(()) => return Ok(stored_document),
+                    Err(error) => {
+                        if attempt + 1 < MAX_TRANSIENT_RETRIES && is_retryable_sqlx_error(&error) {
+                            eprintln!(
+                                "[db] transient database conflict while storing document {}; retrying ({}/{})",
+                                canonical_url,
+                                attempt + 1,
+                                MAX_TRANSIENT_RETRIES
+                            );
+                            sleep_before_retry(attempt).await;
+                            continue;
+                        }
+
+                        return Err(error.into());
+                    }
+                },
+                Err(error) => {
+                    let should_retry =
+                        attempt + 1 < MAX_TRANSIENT_RETRIES && is_retryable_db_error(&error);
+                    let _ = tx.rollback().await;
+
+                    if should_retry {
+                        eprintln!(
+                            "[db] transient database conflict while storing document {}; retrying ({}/{})",
+                            canonical_url,
+                            attempt + 1,
+                            MAX_TRANSIENT_RETRIES
+                        );
+                        sleep_before_retry(attempt).await;
+                        continue;
+                    }
+
+                    return Err(error);
+                }
+            }
+        }
+
+        Err(DbError::Validation(
+            "exhausted transient retries while storing document".to_string(),
+        ))
+    }
+
+    pub async fn record_discovered_links(
+        &self,
+        source_document_id: Option<i64>,
+        discovered_links: &[DiscoveredLink],
+    ) -> DbResult<usize> {
+        for attempt in 0..MAX_TRANSIENT_RETRIES {
+            let mut tx = self.pool.begin().await?;
+
+            match self
+                .record_discovered_links_in_tx(&mut tx, source_document_id, discovered_links)
+                .await
+            {
+                Ok(stored) => match tx.commit().await {
+                    Ok(()) => return Ok(stored),
+                    Err(error) => {
+                        if attempt + 1 < MAX_TRANSIENT_RETRIES && is_retryable_sqlx_error(&error) {
+                            eprintln!(
+                                "[db] transient database conflict while recording discovered links; retrying ({}/{})",
+                                attempt + 1,
+                                MAX_TRANSIENT_RETRIES
+                            );
+                            sleep_before_retry(attempt).await;
+                            continue;
+                        }
+
+                        return Err(error.into());
+                    }
+                },
+                Err(error) => {
+                    let should_retry =
+                        attempt + 1 < MAX_TRANSIENT_RETRIES && is_retryable_db_error(&error);
+                    let _ = tx.rollback().await;
+
+                    if should_retry {
+                        eprintln!(
+                            "[db] transient database conflict while recording discovered links; retrying ({}/{})",
+                            attempt + 1,
+                            MAX_TRANSIENT_RETRIES
+                        );
+                        sleep_before_retry(attempt).await;
+                        continue;
+                    }
+
+                    return Err(error);
+                }
+            }
+        }
+
+        Err(DbError::Validation(
+            "exhausted transient retries while recording discovered links".to_string(),
+        ))
+    }
+
+    async fn store_indexed_document_in_tx(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+        canonical_url: &str,
+        plain_text: &str,
+        term_frequency: &HashMap<String, usize>,
+        extracted_links_count: usize,
+    ) -> DbResult<StoredDocument> {
         let crawl_target = CrawlTarget::new(canonical_url)?;
-        let crawl_target_id = self
-            .upsert_crawl_target_in_tx(&mut tx, &crawl_target)
-            .await?;
+        let crawl_target_id = self.upsert_crawl_target_in_tx(tx, &crawl_target).await?;
 
         let mut document = Document::new(canonical_url)?;
         document.crawl_target_id = Some(crawl_target_id);
@@ -69,7 +214,7 @@ impl SearchEngineRepository {
             DbError::Validation("document content length exceeds i64 range".to_string())
         })?;
 
-        let document_id = self.upsert_document_in_tx(&mut tx, &document).await?;
+        let document_id = self.upsert_document_in_tx(tx, &document).await?;
         let content = DocumentContent::new(
             document_id,
             plain_text,
@@ -77,14 +222,11 @@ impl SearchEngineRepository {
                 DbError::Validation("extracted links count exceeds i32 range".to_string())
             })?,
         )?;
-        self.upsert_document_content_in_tx(&mut tx, &content)
-            .await?;
+        self.upsert_document_content_in_tx(tx, &content).await?;
 
         let indexed_terms = self
-            .replace_document_terms_in_tx(&mut tx, document_id, term_frequency)
+            .replace_document_terms_in_tx(tx, document_id, term_frequency)
             .await?;
-
-        tx.commit().await?;
 
         Ok(StoredDocument {
             crawl_target_id,
@@ -93,23 +235,20 @@ impl SearchEngineRepository {
         })
     }
 
-    pub async fn record_discovered_links(
+    async fn record_discovered_links_in_tx(
         &self,
+        tx: &mut Transaction<'_, Postgres>,
         source_document_id: Option<i64>,
         discovered_links: &[DiscoveredLink],
     ) -> DbResult<usize> {
-        let mut tx = self.pool.begin().await?;
         let sql = links::insert_discovered_link_sql(&self.schema)?;
         let mut stored = 0usize;
 
-        for discovered_link in discovered_links {
+        for discovered_link in sorted_discovered_links(discovered_links) {
             let crawl_target_id = match discovered_link.category {
                 LinkCategory::Visitable => {
                     let crawl_target = CrawlTarget::new(discovered_link.url.clone())?;
-                    Some(
-                        self.upsert_crawl_target_in_tx(&mut tx, &crawl_target)
-                            .await?,
-                    )
+                    Some(self.upsert_crawl_target_in_tx(tx, &crawl_target).await?)
                 }
                 LinkCategory::Junk => None,
             };
@@ -121,13 +260,12 @@ impl SearchEngineRepository {
                 .bind(discovered_link.category.as_str())
                 .bind(&discovered_link.anchor_text)
                 .bind(discovered_link.depth)
-                .execute(&mut *tx)
+                .execute(&mut **tx)
                 .await?;
 
             stored += 1;
         }
 
-        tx.commit().await?;
         Ok(stored)
     }
 
@@ -214,8 +352,8 @@ impl SearchEngineRepository {
 
         let mut indexed_terms = 0usize;
 
-        for (term_value, frequency) in term_frequency {
-            let term = Term::new(term_value.clone())?;
+        for (term_value, frequency) in sorted_term_entries(term_frequency) {
+            let term = Term::new(term_value)?;
             let term_id = sqlx::query_scalar::<_, i64>(&upsert_term_sql)
                 .bind(&term.term)
                 .fetch_one(&mut **tx)
@@ -223,7 +361,7 @@ impl SearchEngineRepository {
             let document_term = DocumentTerm::new(
                 document_id,
                 term_id,
-                i32::try_from(*frequency).map_err(|_| {
+                i32::try_from(frequency).map_err(|_| {
                     DbError::Validation("term frequency exceeds i32 range".to_string())
                 })?,
             )?;
@@ -239,5 +377,79 @@ impl SearchEngineRepository {
         }
 
         Ok(indexed_terms)
+    }
+}
+
+fn sorted_term_entries(term_frequency: &HashMap<String, usize>) -> Vec<(&str, usize)> {
+    let mut entries = term_frequency
+        .iter()
+        .map(|(term, frequency)| (term.as_str(), *frequency))
+        .collect::<Vec<_>>();
+    entries.sort_unstable_by(|left, right| left.0.cmp(right.0));
+    entries
+}
+
+fn sorted_discovered_links(discovered_links: &[DiscoveredLink]) -> Vec<&DiscoveredLink> {
+    let mut ordered = discovered_links.iter().collect::<Vec<_>>();
+    ordered.sort_unstable_by(|left, right| {
+        left.url
+            .cmp(&right.url)
+            .then_with(|| left.category.as_str().cmp(right.category.as_str()))
+            .then_with(|| left.depth.cmp(&right.depth))
+    });
+    ordered
+}
+
+fn is_retryable_db_error(error: &DbError) -> bool {
+    match error {
+        DbError::Sqlx(sqlx_error) => is_retryable_sqlx_error(sqlx_error),
+        DbError::Validation(_) => false,
+    }
+}
+
+fn is_retryable_sqlx_error(error: &sqlx::Error) -> bool {
+    match error {
+        sqlx::Error::Database(database_error) => matches!(
+            database_error.code().as_deref(),
+            Some("40P01") | Some("40001")
+        ),
+        _ => false,
+    }
+}
+
+async fn sleep_before_retry(attempt: usize) {
+    let delay = Duration::from_millis(50 * (attempt as u64 + 1));
+    tokio::time::sleep(delay).await;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{sorted_discovered_links, sorted_term_entries};
+    use crate::models::{DiscoveredLink, LinkCategory};
+    use std::collections::HashMap;
+
+    #[test]
+    fn sorted_term_entries_are_deterministic() {
+        let mut term_frequency = HashMap::new();
+        term_frequency.insert("zebra".to_string(), 2usize);
+        term_frequency.insert("alpha".to_string(), 1usize);
+
+        let ordered = sorted_term_entries(&term_frequency);
+
+        assert_eq!(ordered, vec![("alpha", 1), ("zebra", 2)]);
+    }
+
+    #[test]
+    fn sorted_discovered_links_are_ordered_by_url() {
+        let first =
+            DiscoveredLink::new("https://example.com/z", LinkCategory::Visitable, 1).unwrap();
+        let second =
+            DiscoveredLink::new("https://example.com/a", LinkCategory::Visitable, 1).unwrap();
+        let links = [first, second];
+
+        let ordered = sorted_discovered_links(&links);
+
+        assert_eq!(ordered[0].url, "https://example.com/a");
+        assert_eq!(ordered[1].url, "https://example.com/z");
     }
 }

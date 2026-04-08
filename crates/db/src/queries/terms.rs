@@ -5,10 +5,16 @@ pub fn upsert_term_sql(schema: &str) -> DbResult<String> {
     validate_schema_name(schema)?;
 
     Ok(format!(
-        "INSERT INTO {schema}.terms (term, updated_at) \
-        VALUES ($1, NOW()) \
-        ON CONFLICT (term) DO UPDATE SET updated_at = NOW() \
-        RETURNING id;"
+        "WITH inserted AS ( \
+            INSERT INTO {schema}.terms (term, updated_at) \
+            VALUES ($1, NOW()) \
+            ON CONFLICT (term) DO NOTHING \
+            RETURNING id \
+        ) \
+        SELECT id FROM inserted \
+        UNION ALL \
+        SELECT id FROM {schema}.terms WHERE term = $1 \
+        LIMIT 1;"
     ))
 }
 
